@@ -11,7 +11,7 @@ import dagger.Module
 import dagger.Provides
 import dagger.hilt.InstallIn
 import dagger.hilt.components.SingletonComponent
-import io.maa96.cats.data.api.CatApi
+import io.maa96.cats.data.source.remote.api.CatApi
 import io.maa96.cats.util.SecretFields
 import okhttp3.Authenticator
 import okhttp3.Headers
@@ -69,10 +69,8 @@ object NetworkModule {
     /**
      * Provides [OkHttpClient] instance for token based api services
      *
-     * @param preferencesHelper to access saved token, provided by [AppModule.provideAppPreferencesHelper]
      * @param headers default shared headers to be added in http request, provided by [provideSharedHeaders]
-     * @param authenticator instance of [TokenAuthenticator] for handling UNAUTHORIZED errors,
-     * provided by [provideAuthenticator]
+     * @param authenticator instance of [Authenticator] for handling UNAUTHORIZED errors,
      *
      * @return an instance of [OkHttpClient]
      */
