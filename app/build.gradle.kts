@@ -56,4 +56,11 @@ dependencies {
     androidTestImplementation(libs.androidx.ui.test.junit4)
     debugImplementation(libs.androidx.ui.tooling)
     debugImplementation(libs.androidx.ui.test.manifest)
+
+    // retrofit
+    implementation (libs.retrofit)
+    implementation(libs.gson)
+    implementation(libs.stetho)
+    implementation(libs.stetho.okhttp3)
+    implementation(libs.converter.gson)
 }
