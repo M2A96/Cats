@@ -23,8 +23,8 @@ class CatBreedsRepositoryImpl @Inject constructor(
             val catBreeds = response.map { catBreed ->
                 catBreedMapper.toDomain(catBreed)
             }
-            emit(Resource.Success(catBreeds))
             emit(Resource.Loading(false))
+            emit(Resource.Success(catBreeds))
         } catch (e: Exception) {
             emit(Resource.Loading(false))
             emit(Resource.Error(e.message ?: "Unknown error"))

@@ -53,6 +53,9 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.tooling.preview.Preview
+import coil3.compose.LocalPlatformContext
+import coil3.compose.rememberConstraintsSizeResolver
+import coil3.request.ImageRequest
 import io.maa96.cats.presentation.theme.CatsTheme
 
 @Composable
@@ -101,7 +104,7 @@ fun HomeScreen(
                 }
                 else -> {
                     CatBreedList(
-                        breeds = state.filteredBreeds,
+                        breeds = state.breeds,
                         onBreedClick = onNavigateToDetails,
                         onFavoriteToggle = { breedId ->
                             onEvent(HomeScreenEvent.ToggleFavorite(breedId))
@@ -238,7 +241,6 @@ fun CatBreedList(
     }
 }
 
-@OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun CatBreedCard(
     breed: Cat,
@@ -260,7 +262,10 @@ fun CatBreedCard(
                 ) {
                     Image(
                         painter = rememberAsyncImagePainter(
-                            model = breed.imageUrl
+                            model = ImageRequest.Builder(LocalPlatformContext.current)
+                                .data(breed.imageUrl)
+                                .size(rememberConstraintsSizeResolver())
+                                .build()
                         ),
                         contentDescription = "${breed.name} ${stringResource(R.string.cat_image)}",
                         contentScale = ContentScale.Crop,
@@ -540,7 +545,7 @@ fun HomeScreenPreview() {
                     Cat(
                         id = "beng",
                         name = "Bengal",
-                        imageUrl = "",
+                        imageUrl = "https://cdn2.thecatapi.com/images/xnsqonbjW.jpg",
                         temperament = "Alert, Agile, Energetic",
                         origin = "United States",
                         isFavorite = true
@@ -548,7 +553,7 @@ fun HomeScreenPreview() {
                     Cat(
                         id = "siam",
                         name = "Siamese",
-                        imageUrl = "",
+                        imageUrl = "https://cdn2.thecatapi.com/images/xnsqonbjW.jpg",
                         temperament = "Curious, Intelligent, Social",
                         origin = "Thailand",
                         isFavorite = false

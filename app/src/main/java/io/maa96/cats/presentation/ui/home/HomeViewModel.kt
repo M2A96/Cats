@@ -50,7 +50,6 @@ class HomeViewModel @Inject constructor(
 
     init {
         loadCats()
-        getCatBreeds()
     }
 
     fun onEvent(event: HomeScreenEvent) {
@@ -64,27 +63,6 @@ class HomeViewModel @Inject constructor(
             is HomeScreenEvent.ToggleFavorite -> TODO()
             HomeScreenEvent.ToggleFilterDialog -> TODO()
             HomeScreenEvent.ToggleTheme -> TODO()
-        }
-    }
-
-    private fun getCatBreeds() {
-        viewModelScope.launch {
-            getCatBreedsUseCase(limit = 10, page = 1)
-                .catch {
-                    Log.e("HomeViewModel", "getCatBreeds: error${it.message}" )
-                }.collect { result ->
-                    when(result){
-                        is Resource.Error -> {
-                            Log.e("HomeViewModel", "getCatBreeds: error${result.message}")
-                        }
-                        is Resource.Loading -> {
-                            Log.i("HomeViewModel", "getCatBreeds: is loading ${result.isLoading} ")
-                        }
-                        is Resource.Success -> {
-                            Log.d("HomeViewModel", "getCatBreeds: result${result.data}")
-                        }
-                    }
-                }
         }
     }
 
@@ -105,68 +83,31 @@ class HomeViewModel @Inject constructor(
 
     private fun loadCats() {
         viewModelScope.launch {
-            _uiState.update { currentState ->
-                currentState.copy(
-                    isLoading = true,
-                    error = null
-                )
+            getCatBreedsUseCase(limit = 10, page = 1)
+                .catch {
+                    Log.e("HomeViewModel", "getCatBreeds: error${it.message}")
+                    _uiState.update { it.copy(isLoading = false) }
+                }.collect { result ->
+                    handleGetBreedsResult(result)
+                }
+        }
+    }
+
+    private fun handleGetBreedsResult(result: Resource<List<Cat>>) {
+        when (result) {
+            is Resource.Error -> {
+                _uiState.update { it.copy(isLoading = false, error = result.message) }
             }
 
-            try {
-                // Simulate network delay
-                delay(2000)
+            is Resource.Loading -> {
+                _uiState.update { it.copy(isLoading = true) }
+            }
 
-                // Mock data for demonstration
-                val breeds = listOf(
-                    Cat(
-                        id = "beng",
-                        name = "Bengal",
-                        imageUrl = "https://cdn2.thecatapi.com/images/O3btzLlsO.png",
-                        temperament = "Alert, Agile, Energetic, Demanding, Intelligent",
-                        origin = "United States"
-                    ),
-                    Cat(
-                        id = "siam",
-                        name = "Siamese",
-                        imageUrl = "https://cdn2.thecatapi.com/images/Kf57XGGxE.jpg",
-                        temperament = "Active, Agile, Clever, Sociable, Loving, Energetic",
-                        origin = "Thailand"
-                    ),
-                    Cat(
-                        id = "mcoo",
-                        name = "Maine Coon",
-                        imageUrl = "https://cdn2.thecatapi.com/images/OOD3VXAQn.jpg",
-                        temperament = "Adaptable, Intelligent, Loving, Gentle, Independent",
-                        origin = "United States"
-                    ),
-                    Cat(
-                        id = "ragd",
-                        name = "Ragdoll",
-                        imageUrl = "https://cdn2.thecatapi.com/images/oGefY4NWI.jpg",
-                        temperament = "Affectionate, Friendly, Gentle, Quiet, Easygoing",
-                        origin = "United States"
-                    ),
-                    Cat(
-                        id = "esho",
-                        name = "Exotic Shorthair",
-                        imageUrl = "https://cdn2.thecatapi.com/images/KoK5Xq3xX.jpg",
-                        temperament = "Affectionate, Sweet, Loyal, Quiet, Peaceful",
-                        origin = "United States"
-                    )
-                )
-
-                _catBreeds.value = breeds
-                _uiState.update { currentState ->
-                    currentState.copy(
+            is Resource.Success -> {
+                _uiState.update {
+                    it.copy(
                         isLoading = false,
-                        breeds = breeds
-                    )
-                }
-            } catch (e: Exception) {
-                _uiState.update { currentState ->
-                    currentState.copy(
-                        isLoading = false,
-                        error = e.message
+                        breeds = result.data ?: emptyList()
                     )
                 }
             }
