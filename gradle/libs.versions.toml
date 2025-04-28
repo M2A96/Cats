@@ -16,6 +16,8 @@ retrofit = "2.11.0"
 stetho = "1.5.1"
 stethoOkhttp3 = "1.5.1"
 hilt = "2.54"
+hiltNavigationCompose = "1.2.0"
+navigation-compose = "2.7.7"
 roomCompiler = "2.6.1"
 roomKtx = "2.6.1"
 roomRuntime = "2.7.0"
@@ -49,6 +51,8 @@ hilt-android-compiler = { module = "com.google.dagger:hilt-android-compiler", ve
 androidx-room-compiler = { module = "androidx.room:room-compiler", version.ref = "roomRuntime" }
 androidx-room-ktx = { module = "androidx.room:room-ktx", version.ref = "roomRuntime" }
 androidx-room-runtime = { module = "androidx.room:room-runtime", version.ref = "roomRuntime" }
+androidx-navigation-compose = { group = "androidx.navigation", name = "navigation-compose", version.ref = "navigation-compose" }
+androidx-hilt-navigation-compose = { group = "androidx.hilt", name = "hilt-navigation-compose", version.ref = "hiltNavigationCompose" }
 
 
 

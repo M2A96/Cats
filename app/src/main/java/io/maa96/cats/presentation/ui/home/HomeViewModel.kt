@@ -2,6 +2,7 @@ package io.maa96.cats.presentation.ui.home
 
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
+import dagger.hilt.android.lifecycle.HiltViewModel
 import io.maa96.cats.domain.model.Cat
 import kotlinx.coroutines.FlowPreview
 import kotlinx.coroutines.delay
@@ -13,9 +14,11 @@ import kotlinx.coroutines.flow.debounce
 import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
+import javax.inject.Inject
 
-class HomeViewModel :ViewModel() {
-    private val _uiState = MutableStateFlow<HomeScreenState>(HomeScreenState())
+@HiltViewModel
+class HomeViewModel @Inject constructor() :ViewModel() {
+    private val _uiState = MutableStateFlow(HomeScreenState())
     val uiState = _uiState.asStateFlow()
 
     private val _searchQuery = MutableStateFlow("")
@@ -41,6 +44,20 @@ class HomeViewModel :ViewModel() {
 
     init {
         loadCats()
+    }
+
+    fun onEvent(event: HomeScreenEvent) {
+        when (event) {
+            is HomeScreenEvent.OnSearchQueryChange -> {
+                _searchQuery.value = event.query
+            }
+
+            HomeScreenEvent.NavigateToFavorites -> TODO()
+            HomeScreenEvent.Refresh -> TODO()
+            is HomeScreenEvent.ToggleFavorite -> TODO()
+            HomeScreenEvent.ToggleFilterDialog -> TODO()
+            HomeScreenEvent.ToggleTheme -> TODO()
+        }
     }
 
     fun updateSearchQuery(query: String) {

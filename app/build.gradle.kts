@@ -71,6 +71,7 @@ dependencies {
 
     // hilt
     implementation(libs.hilt.android)
+    implementation(libs.androidx.hilt.navigation.compose)
     kapt(libs.hilt.android.compiler)
 
     // room persistence library
@@ -78,6 +79,9 @@ dependencies {
     implementation(libs.androidx.room.ktx)
     ksp(libs.androidx.room.compiler)
 
-//    coil image loader
+    // coil image loader
     implementation(libs.coil.compose)
+
+    implementation(libs.androidx.navigation.compose)
+
 }
