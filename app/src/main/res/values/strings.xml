@@ -17,4 +17,22 @@
     <string name="try_again">try again</string>
     <string name="favorites">favorites</string>
     <string name="filter_options">filter options</string>
+    <string name="back">Back</string>
+    <string name="lifespan">Lifespan</string>
+    <string name="weight">Weight</string>
+    <string name="description">Description</string>
+    <string name="characteristics">Characteristics</string>
+    <string name="hypoallergenic">Hypoallergenic</string>
+    <string name="affection_level">Affection Level</string>
+    <string name="child_friendly">Child Friendly</string>
+    <string name="stranger_friendly">Stranger Friendly</string>
+    <string name="visit_wikipedia">Visit Wikipedia Page</string>
+    <string name="yes">Yes</string>
+    <string name="no">No</string>
+    <string name="very_low">Very Low</string>
+    <string name="low">Low</string>
+    <string name="medium">Medium</string>
+    <string name="high">High</string>
+    <string name="very_high">Very High</string>
+    <string name="unknown">Unknown</string>
 </resources>
