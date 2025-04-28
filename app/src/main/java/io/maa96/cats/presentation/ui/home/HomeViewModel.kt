@@ -1,14 +1,18 @@
 package io.maa96.cats.presentation.ui.home
 
+import android.util.Log
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import dagger.hilt.android.lifecycle.HiltViewModel
 import io.maa96.cats.domain.model.Cat
+import io.maa96.cats.domain.model.Resource
+import io.maa96.cats.domain.usecase.GetCatBreedsUseCase
 import kotlinx.coroutines.FlowPreview
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.asStateFlow
+import kotlinx.coroutines.flow.catch
 import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.flow.debounce
 import kotlinx.coroutines.flow.stateIn
@@ -17,7 +21,9 @@ import kotlinx.coroutines.launch
 import javax.inject.Inject
 
 @HiltViewModel
-class HomeViewModel @Inject constructor() :ViewModel() {
+class HomeViewModel @Inject constructor(
+    private val getCatBreedsUseCase: GetCatBreedsUseCase
+) : ViewModel() {
     private val _uiState = MutableStateFlow(HomeScreenState())
     val uiState = _uiState.asStateFlow()
 
@@ -44,6 +50,7 @@ class HomeViewModel @Inject constructor() :ViewModel() {
 
     init {
         loadCats()
+        getCatBreeds()
     }
 
     fun onEvent(event: HomeScreenEvent) {
@@ -57,6 +64,27 @@ class HomeViewModel @Inject constructor() :ViewModel() {
             is HomeScreenEvent.ToggleFavorite -> TODO()
             HomeScreenEvent.ToggleFilterDialog -> TODO()
             HomeScreenEvent.ToggleTheme -> TODO()
+        }
+    }
+
+    private fun getCatBreeds() {
+        viewModelScope.launch {
+            getCatBreedsUseCase(limit = 10, page = 1)
+                .catch {
+                    Log.e("HomeViewModel", "getCatBreeds: error${it.message}" )
+                }.collect { result ->
+                    when(result){
+                        is Resource.Error -> {
+                            Log.e("HomeViewModel", "getCatBreeds: error${result.message}")
+                        }
+                        is Resource.Loading -> {
+                            Log.i("HomeViewModel", "getCatBreeds: is loading ${result.isLoading} ")
+                        }
+                        is Resource.Success -> {
+                            Log.d("HomeViewModel", "getCatBreeds: result${result.data}")
+                        }
+                    }
+                }
         }
     }
 

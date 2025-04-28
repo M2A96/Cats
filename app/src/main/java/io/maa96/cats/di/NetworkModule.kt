@@ -1,6 +1,5 @@
 package io.maa96.cats.di
 
-import com.facebook.stetho.okhttp3.BuildConfig
 import com.facebook.stetho.okhttp3.StethoInterceptor
 import com.google.gson.Gson
 import com.google.gson.GsonBuilder
@@ -11,6 +10,7 @@ import dagger.Module
 import dagger.Provides
 import dagger.hilt.InstallIn
 import dagger.hilt.components.SingletonComponent
+import io.maa96.cats.BuildConfig
 import io.maa96.cats.data.source.remote.api.CatApi
 import io.maa96.cats.util.SecretFields
 import okhttp3.Authenticator
@@ -76,9 +76,8 @@ object NetworkModule {
      */
     @Singleton
     @Provides
-    fun provideOkHttpClientWithToken(
+    fun provideOkHttpClient(
         headers: Headers,
-        authenticator: Authenticator,
         secretFields: SecretFields
     ): OkHttpClient {
         val builder = OkHttpClient.Builder()
@@ -109,38 +108,6 @@ object NetworkModule {
             }
         )
 
-        builder.authenticator(authenticator)
-
-        return builder.build()
-    }
-
-    /**
-     * provides instance of [OkHttpClient] for without-token api services
-     *
-     * @param headers default shared headers provided by [provideSharedHeaders]
-     * @return an instance of [OkHttpClient]
-     */
-    @Singleton
-    @Provides
-    fun provideOkHttpClient(headers: Headers, secretFields: SecretFields): OkHttpClient {
-        val builder = OkHttpClient.Builder()
-        if (BuildConfig.DEBUG) {
-            val loggingInterceptor = HttpLoggingInterceptor()
-            loggingInterceptor.level = HttpLoggingInterceptor.Level.BODY
-            builder.addInterceptor(loggingInterceptor)
-
-            builder.addNetworkInterceptor(StethoInterceptor())
-        }
-
-        builder.interceptors().add(
-            Interceptor { chain ->
-                val request = chain.request()
-                val requestBuilder = request.newBuilder()
-                    .headers(headers)
-                    .method(request.method, request.body)
-                chain.proceed(requestBuilder.build())
-            }
-        )
 
         return builder.build()
     }
