@@ -1,0 +1,9 @@
+package io.maa96.cats.presentation.ui.details
+
+sealed class DetailScreenEvent {
+    object NavigateBack : DetailScreenEvent()
+    object Refresh : DetailScreenEvent()
+    object ToggleFavorite : DetailScreenEvent()
+    object OpenWikipedia : DetailScreenEvent()
+    data class SelectImage(val index: Int) : DetailScreenEvent()
+}
