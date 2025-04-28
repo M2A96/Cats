@@ -65,6 +65,9 @@ dependencies {
     implementation(libs.stetho)
     implementation(libs.stetho.okhttp3)
     implementation(libs.converter.gson)
+
+    implementation(libs.logging.interceptor)
+
     // hilt
     implementation(libs.hilt.android)
     kapt(libs.hilt.android.compiler)
