@@ -9,7 +9,7 @@ plugins {
 
 android {
     namespace = "io.maa96.cats"
-    compileSdk = 34
+    compileSdk = 35
 
     defaultConfig {
         applicationId = "io.maa96.cats"
@@ -77,4 +77,7 @@ dependencies {
     implementation(libs.androidx.room.runtime)
     implementation(libs.androidx.room.ktx)
     ksp(libs.androidx.room.compiler)
+
+//    coil image loader
+    implementation(libs.coil.compose)
 }
