@@ -1,0 +1,589 @@
+package io.maa96.cats.presentation.ui.home
+
+import androidx.compose.animation.core.animateFloat
+import androidx.compose.animation.core.infiniteRepeatable
+import androidx.compose.animation.core.rememberInfiniteTransition
+import androidx.compose.animation.core.tween
+import androidx.compose.foundation.Image
+import androidx.compose.foundation.background
+import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.PaddingValues
+import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.heightIn
+import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.lazy.LazyColumn
+import androidx.compose.foundation.shape.CircleShape
+import androidx.compose.material3.ExperimentalMaterial3Api
+import androidx.compose.material3.IconButton
+import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.Scaffold
+import androidx.compose.material3.Text
+import androidx.compose.material3.TopAppBar
+import androidx.compose.material.icons.filled.*
+import androidx.compose.material3.Card
+import androidx.compose.material3.FloatingActionButton
+import androidx.compose.material3.Icon
+import androidx.compose.material3.OutlinedTextField
+import androidx.compose.material3.Surface
+import androidx.compose.material3.TopAppBarDefaults
+import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.unit.dp
+import coil3.compose.rememberAsyncImagePainter
+import io.maa96.cats.R
+import io.maa96.cats.domain.model.Cat
+import androidx.compose.foundation.layout.*
+import androidx.compose.foundation.lazy.items
+import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.material.icons.Icons
+import androidx.compose.material3.*
+import androidx.compose.runtime.Composable
+import androidx.compose.ui.Alignment
+import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.clip
+import androidx.compose.ui.geometry.Offset
+import androidx.compose.ui.graphics.Brush
+import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.layout.ContentScale
+import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.style.TextAlign
+import androidx.compose.ui.text.style.TextOverflow
+import androidx.compose.ui.tooling.preview.Preview
+import io.maa96.cats.presentation.theme.CatsTheme
+
+@Composable
+fun HomeScreen(
+    state: HomeScreenState,
+    modifier: Modifier = Modifier,
+    onEvent: (HomeScreenEvent) -> Unit,
+    onNavigateToDetails: (String) -> Unit
+) {
+    Scaffold(
+        topBar = {
+            HomeAppBar(
+                onFavoriteClick = { onEvent(HomeScreenEvent.NavigateToFavorites) },
+                onFilterClick = { onEvent(HomeScreenEvent.ToggleFilterDialog) }
+            )
+        },
+        floatingActionButton = {
+            ThemeToggleFab(
+                onToggleTheme = { onEvent(HomeScreenEvent.ToggleTheme) }
+            )
+        }
+    ) { paddingValues ->
+        Column(
+            modifier = modifier
+                .fillMaxSize()
+                .padding(paddingValues)
+                .background(MaterialTheme.colorScheme.background)
+        ) {
+            SearchBar(
+                query = state.searchQuery,
+                onQueryChange = { onEvent(HomeScreenEvent.OnSearchQueryChange(it)) }
+            )
+
+            when {
+                state.isLoading -> {
+                    ShimmerCatBreedList()
+                }
+                state.error != null -> {
+                    ErrorState(
+                        message = state.error,
+                        onRetry = { onEvent(HomeScreenEvent.Refresh) }
+                    )
+                }
+                state.filteredBreeds.isEmpty() && state.searchQuery.isNotBlank() -> {
+                    EmptySearchResult(query = state.searchQuery)
+                }
+                else -> {
+                    CatBreedList(
+                        breeds = state.filteredBreeds,
+                        onBreedClick = onNavigateToDetails,
+                        onFavoriteToggle = { breedId ->
+                            onEvent(HomeScreenEvent.ToggleFavorite(breedId))
+                        }
+                    )
+                }
+            }
+        }
+    }
+}
+
+@OptIn(ExperimentalMaterial3Api::class)
+@Composable
+fun HomeAppBar(
+    onFavoriteClick: () -> Unit,
+    onFilterClick: () -> Unit,
+    modifier: Modifier = Modifier
+) {
+    TopAppBar(
+        title = {
+            Text(
+                text = stringResource(R.string.app_title),
+                color = MaterialTheme.colorScheme.onPrimary
+            )
+        },
+        actions = {
+            IconButton(onClick = onFavoriteClick) {
+                Icon(
+                    imageVector = Icons.Default.Favorite,
+                    contentDescription = stringResource(R.string.favorites),
+                    tint = MaterialTheme.colorScheme.onPrimary
+                )
+            }
+            IconButton(onClick = onFilterClick) {
+                Icon(
+                    imageVector = Icons.Default.Notifications,
+                    contentDescription = stringResource(R.string.filter_options),
+                    tint = MaterialTheme.colorScheme.onPrimary
+                )
+            }
+        },
+        colors = TopAppBarDefaults.topAppBarColors(
+            containerColor = MaterialTheme.colorScheme.primary,
+            titleContentColor = MaterialTheme.colorScheme.onPrimary
+        ),
+        modifier = modifier
+    )
+}
+
+@Composable
+fun ThemeToggleFab(
+    onToggleTheme: () -> Unit,
+    modifier: Modifier = Modifier
+) {
+    FloatingActionButton(
+        onClick = onToggleTheme,
+        containerColor = MaterialTheme.colorScheme.primaryContainer,
+        modifier = modifier
+    ) {
+        Icon(
+            imageVector = Icons.Default.DateRange,
+            contentDescription = stringResource(R.string.toggle_theme)
+        )
+    }
+}
+
+@Composable
+fun SearchBar(
+    query: String,
+    onQueryChange: (String) -> Unit,
+    modifier: Modifier = Modifier
+) {
+    Surface(
+        modifier = modifier
+            .fillMaxWidth()
+            .padding(16.dp),
+        color = MaterialTheme.colorScheme.surface
+    ) {
+        OutlinedTextField(
+            value = query,
+            onValueChange = onQueryChange,
+            placeholder = {
+                Text(stringResource(R.string.search_cat_breeds))
+            },
+            leadingIcon = {
+                Icon(
+                    imageVector = Icons.Default.Search,
+                    contentDescription = stringResource(R.string.search)
+                )
+            },
+            trailingIcon = {
+                if (query.isNotEmpty()) {
+                    IconButton(onClick = { onQueryChange("") }) {
+                        Icon(
+                            imageVector = Icons.Default.Clear,
+                            contentDescription = stringResource(R.string.clear_search)
+                        )
+                    }
+                }
+            },
+            singleLine = true,
+            shape = RoundedCornerShape(24.dp),
+            modifier = Modifier
+                .fillMaxWidth()
+                .heightIn(min = 56.dp)
+        )
+    }
+}
+
+@Composable
+fun CatBreedList(
+    breeds: List<Cat>,
+    onBreedClick: (String) -> Unit,
+    onFavoriteToggle: (String) -> Unit,
+    modifier: Modifier = Modifier
+) {
+    LazyColumn(
+        modifier = modifier
+            .fillMaxWidth()
+            .padding(horizontal = 16.dp),
+        verticalArrangement = Arrangement.spacedBy(16.dp),
+        contentPadding = PaddingValues(vertical = 16.dp)
+    ) {
+        items(
+            items = breeds,
+            key = { it.id }
+        ) { breed ->
+            CatBreedCard(
+                breed = breed,
+                onClick = { onBreedClick(breed.id) },
+                onFavoriteClick = { onFavoriteToggle(breed.id) }
+            )
+        }
+    }
+}
+
+@OptIn(ExperimentalMaterial3Api::class)
+@Composable
+fun CatBreedCard(
+    breed: Cat,
+    onClick: () -> Unit,
+    onFavoriteClick: () -> Unit,
+    modifier: Modifier = Modifier
+) {
+    Card(
+        onClick = onClick,
+        shape = RoundedCornerShape(12.dp),
+        modifier = modifier.fillMaxWidth()
+    ) {
+        Box {
+            Column {
+                Box(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .height(180.dp)
+                ) {
+                    Image(
+                        painter = rememberAsyncImagePainter(
+                            model = breed.imageUrl
+                        ),
+                        contentDescription = "${breed.name} ${stringResource(R.string.cat_image)}",
+                        contentScale = ContentScale.Crop,
+                        modifier = Modifier.fillMaxSize()
+                    )
+                }
+
+                Column(modifier = Modifier.padding(16.dp)) {
+                    Text(
+                        text = breed.name,
+                        style = MaterialTheme.typography.titleLarge,
+                        fontWeight = FontWeight.SemiBold
+                    )
+
+                    Spacer(modifier = Modifier.height(4.dp))
+
+                    Text(
+                        text = "${stringResource(R.string.temperament)}: ${breed.temperament}",
+                        style = MaterialTheme.typography.bodyMedium,
+                        maxLines = 1,
+                        overflow = TextOverflow.Ellipsis,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant
+                    )
+
+                    Spacer(modifier = Modifier.height(4.dp))
+
+                    Text(
+                        text = "${stringResource(R.string.origin)}: ${breed.origin}",
+                        style = MaterialTheme.typography.bodyMedium,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant
+                    )
+                }
+            }
+
+            // Favorite button
+            IconButton(
+                onClick = onFavoriteClick,
+                modifier = Modifier
+                    .align(Alignment.TopEnd)
+                    .padding(8.dp)
+                    .size(40.dp)
+                    .clip(CircleShape)
+                    .background(MaterialTheme.colorScheme.surface.copy(alpha = 0.8f))
+            ) {
+                Icon(
+                    imageVector = if (breed.isFavorite) Icons.Default.Favorite else Icons.Default.FavoriteBorder,
+                    contentDescription = if (breed.isFavorite)
+                        stringResource(R.string.remove_from_favorites)
+                    else
+                        stringResource(R.string.add_to_favorites),
+                    tint = if (breed.isFavorite) Color.Red else MaterialTheme.colorScheme.onSurface
+                )
+            }
+        }
+    }
+}
+
+@Composable
+fun ShimmerCatBreedList(
+    modifier: Modifier = Modifier
+) {
+    LazyColumn(
+        modifier = modifier
+            .fillMaxWidth()
+            .padding(horizontal = 16.dp),
+        verticalArrangement = Arrangement.spacedBy(16.dp),
+        contentPadding = PaddingValues(vertical = 16.dp)
+    ) {
+        items(5) {
+            ShimmerCatBreedItem()
+        }
+    }
+}
+
+@Composable
+fun ShimmerCatBreedItem(
+    modifier: Modifier = Modifier
+) {
+    val shimmerColors = listOf(
+        Color.LightGray.copy(alpha = 0.6f),
+        Color.LightGray.copy(alpha = 0.2f),
+        Color.LightGray.copy(alpha = 0.6f)
+    )
+
+    val transition = rememberInfiniteTransition()
+    val translateAnim = transition.animateFloat(
+        initialValue = 0f,
+        targetValue = 1000f,
+        animationSpec = infiniteRepeatable(
+            animation = tween(durationMillis = 1200, delayMillis = 300)
+        )
+    )
+
+    val brush = Brush.linearGradient(
+        colors = shimmerColors,
+        start = Offset.Zero,
+        end = Offset(x = translateAnim.value, y = translateAnim.value)
+    )
+
+    Card(
+        shape = RoundedCornerShape(12.dp),
+        modifier = modifier.fillMaxWidth()
+    ) {
+        Column {
+            // Image placeholder
+            Spacer(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .height(180.dp)
+                    .background(brush)
+            )
+
+            Column(modifier = Modifier.padding(16.dp)) {
+                // Title placeholder
+                Spacer(
+                    modifier = Modifier
+                        .fillMaxWidth(0.7f)
+                        .height(20.dp)
+                        .background(brush)
+                )
+
+                Spacer(modifier = Modifier.height(8.dp))
+
+                // Temperament placeholder
+                Spacer(
+                    modifier = Modifier
+                        .fillMaxWidth(0.9f)
+                        .height(15.dp)
+                        .background(brush)
+                )
+
+                Spacer(modifier = Modifier.height(8.dp))
+
+                // Origin placeholder
+                Spacer(
+                    modifier = Modifier
+                        .fillMaxWidth(0.5f)
+                        .height(15.dp)
+                        .background(brush)
+                )
+            }
+        }
+    }
+}
+
+@Composable
+fun EmptySearchResult(
+    query: String,
+    modifier: Modifier = Modifier
+) {
+    Column(
+        modifier = modifier
+            .fillMaxSize()
+            .padding(16.dp),
+        horizontalAlignment = Alignment.CenterHorizontally,
+        verticalArrangement = Arrangement.Center
+    ) {
+        Icon(
+            imageVector = Icons.Default.Search,
+            contentDescription = null,
+            modifier = Modifier.size(72.dp),
+            tint = MaterialTheme.colorScheme.primary.copy(alpha = 0.6f)
+        )
+
+        Spacer(modifier = Modifier.height(16.dp))
+
+        Text(
+            text = stringResource(R.string.no_results_found, query),
+            style = MaterialTheme.typography.titleMedium
+        )
+
+        Spacer(modifier = Modifier.height(8.dp))
+
+        Text(
+            text = stringResource(R.string.adjust_search_tip),
+            style = MaterialTheme.typography.bodyMedium,
+            color = MaterialTheme.colorScheme.onSurfaceVariant,
+            textAlign = TextAlign.Center
+        )
+    }
+}
+
+@Composable
+fun ErrorState(
+    message: String,
+    onRetry: () -> Unit,
+    modifier: Modifier = Modifier
+) {
+    Column(
+        modifier = modifier
+            .fillMaxSize()
+            .padding(16.dp),
+        horizontalAlignment = Alignment.CenterHorizontally,
+        verticalArrangement = Arrangement.Center
+    ) {
+        Icon(
+            imageVector = Icons.Default.Share,
+            contentDescription = null,
+            modifier = Modifier.size(72.dp),
+            tint = MaterialTheme.colorScheme.error
+        )
+
+        Spacer(modifier = Modifier.height(16.dp))
+
+        Text(
+            text = stringResource(R.string.connection_error),
+            style = MaterialTheme.typography.titleMedium
+        )
+
+        Spacer(modifier = Modifier.height(8.dp))
+
+        Text(
+            text = message,
+            style = MaterialTheme.typography.bodyMedium,
+            color = MaterialTheme.colorScheme.onSurfaceVariant,
+            textAlign = TextAlign.Center
+        )
+
+        Spacer(modifier = Modifier.height(24.dp))
+
+        Button(onClick = onRetry) {
+            Text(stringResource(R.string.try_again))
+        }
+    }
+}
+
+// Preview functions
+@Preview(showBackground = true)
+@Composable
+fun HomeAppBarPreview() {
+    CatsTheme  {
+        HomeAppBar(
+            onFavoriteClick = {},
+            onFilterClick = {}
+        )
+    }
+}
+
+@Preview(showBackground = true)
+@Composable
+fun SearchBarPreview() {
+    CatsTheme {
+        SearchBar(
+            query = "Bengal",
+            onQueryChange = {}
+        )
+    }
+}
+
+@Preview(showBackground = true)
+@Composable
+fun CatBreedCardPreview() {
+    CatsTheme {
+        CatBreedCard(
+            breed = Cat(
+                id = "beng",
+                name = "Bengal",
+                imageUrl = "",
+                temperament = "Alert, Agile, Energetic",
+                origin = "United States",
+                isFavorite = true
+            ),
+            onClick = {},
+            onFavoriteClick = {}
+        )
+    }
+}
+
+@Preview(showBackground = true, widthDp = 360, heightDp = 640)
+@Composable
+fun HomeScreenPreview() {
+    CatsTheme {
+        HomeScreen(
+            state = HomeScreenState(
+                searchQuery = "Bengal",
+                filteredBreeds = listOf(
+                    Cat(
+                        id = "beng",
+                        name = "Bengal",
+                        imageUrl = "",
+                        temperament = "Alert, Agile, Energetic",
+                        origin = "United States",
+                        isFavorite = true
+                    ),
+                    Cat(
+                        id = "siam",
+                        name = "Siamese",
+                        imageUrl = "",
+                        temperament = "Curious, Intelligent, Social",
+                        origin = "Thailand",
+                        isFavorite = false
+                    )
+                )
+            ),
+            onEvent = {},
+            onNavigateToDetails = {}
+        )
+    }
+}
+
+@Preview(showBackground = true)
+@Composable
+fun EmptySearchResultPreview() {
+    CatsTheme {
+        EmptySearchResult(query = "xyz")
+    }
+}
+
+@Preview(showBackground = true)
+@Composable
+fun ErrorStatePreview() {
+    CatsTheme {
+        ErrorState(
+            message = "Failed to load cat breeds. Please check your internet connection.",
+            onRetry = {}
+        )
+    }
+}
+
+@Preview(showBackground = true)
+@Composable
+fun ShimmerCatBreedListPreview() {
+    CatsTheme {
+        ShimmerCatBreedList()
+    }
+}

@@ -1,3 +1,20 @@
 <resources>
     <string name="app_name">Cats</string>
+    <string name="title">Title</string>
+    <string name="app_title">Title</string>
+    <string name="toggle_theme">Toggle Theme</string>
+    <string name="search_cat_breeds">search cat breeds</string>
+    <string name="search">search</string>
+    <string name="clear_search">clear search</string>
+    <string name="cat_image">cat image</string>
+    <string name="temperament">temperament</string>
+    <string name="origin">origin</string>
+    <string name="remove_from_favorites">remove from favorites</string>
+    <string name="add_to_favorites">add to favorites</string>
+    <string name="no_results_found">no results found</string>
+    <string name="adjust_search_tip">adjust search tip</string>
+    <string name="connection_error">connection error</string>
+    <string name="try_again">try again</string>
+    <string name="favorites">favorites</string>
+    <string name="filter_options">filter options</string>
 </resources>
