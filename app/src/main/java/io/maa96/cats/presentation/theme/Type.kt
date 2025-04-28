@@ -1,4 +1,4 @@
-package io.maa96.cats.ui.theme
+package io.maa96.cats.presentation.theme
 
 import androidx.compose.material3.Typography
 import androidx.compose.ui.text.TextStyle

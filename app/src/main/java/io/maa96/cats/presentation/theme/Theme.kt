@@ -1,4 +1,4 @@
-package io.maa96.cats.ui.theme
+package io.maa96.cats.presentation.theme
 
 import android.app.Activity
 import android.os.Build
