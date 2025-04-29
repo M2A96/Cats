@@ -14,7 +14,7 @@ fun CatsApp() {
             navController = navController,
             startDestination = Screen.Home.route
         ) {
-            CatsNavGraph(navController)
+            catsNavGraph(navController)
         }
     }
 }

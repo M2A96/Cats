@@ -1,6 +1,5 @@
 package io.maa96.cats.data.repository
 
-import io.maa96.cats.data.dto.CatBreed
 import io.maa96.cats.data.mapper.CatBreedMapper
 import io.maa96.cats.data.source.remote.api.CatApi
 import io.maa96.cats.domain.model.Cat
@@ -25,6 +24,19 @@ class CatBreedsRepositoryImpl @Inject constructor(
             }
             emit(Resource.Loading(false))
             emit(Resource.Success(catBreeds))
+        } catch (e: Exception) {
+            emit(Resource.Loading(false))
+            emit(Resource.Error(e.message ?: "Unknown error"))
+        }
+    }
+
+    override suspend fun getCatBreedById(breedId: String): Flow<Resource<Cat>> = flow {
+        try {
+            emit(Resource.Loading(true))
+            val response = api.getCatBreedById(breedId)
+            val catBreed = catBreedMapper.toDomain(response)
+            emit(Resource.Loading(false))
+            emit(Resource.Success(catBreed))
         } catch (e: Exception) {
             emit(Resource.Loading(false))
             emit(Resource.Error(e.message ?: "Unknown error"))

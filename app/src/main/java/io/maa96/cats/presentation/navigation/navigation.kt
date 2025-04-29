@@ -14,20 +14,20 @@ import io.maa96.cats.presentation.ui.home.HomeViewModel
 
 sealed class Screen(val route: String){
     data object Home: Screen("home")
-    data object Detail: Screen("details/{catId}") {
-        fun createRoute(catId: String) = "details/$catId"
+    data object Detail: Screen("detail/{breedId}") {
+        fun createRoute(catId: String) = "detail/$catId"
     }
 }
 
-fun NavGraphBuilder.CatsNavGraph(navController: NavHostController){
+fun NavGraphBuilder.catsNavGraph(navController: NavHostController){
     composable(Screen.Home.route){
         val viewModel: HomeViewModel = hiltViewModel()
         val state by viewModel.uiState.collectAsState()
         HomeScreen(
             state = state,
             onEvent = viewModel::onEvent,
-            onNavigateToDetails = { characterId ->
-                navController.navigate(Screen.Detail.createRoute(characterId))
+            onNavigateToDetails = {
+                navController.navigate(Screen.Detail.createRoute(it))
             }
 
         )

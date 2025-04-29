@@ -9,10 +9,18 @@ class CatBreedMapper @Inject constructor() {
         return Cat(
             id = catBreed.id,
             name = catBreed.name,
-            imageUrl = catBreed.image.url,
+            images = catBreed.image?.let { listOf(it.url) },
+            description = catBreed.description,
             temperament = catBreed.temperament,
+            origin = catBreed.origin,
+            lifeSpan = catBreed.lifeSpan,
+            weight = catBreed.weight.imperial,
+            hypoallergenic = catBreed.hypoallergenic,
+            affectionLevel = catBreed.affectionLevel,
+            childFriendly = catBreed.childFriendly,
+            strangerFriendly = catBreed.strangerFriendly,
+            wikipediaUrl = catBreed.wikipediaUrl,
             isFavorite = false,
-            origin = catBreed.origin
         )
     }
 }

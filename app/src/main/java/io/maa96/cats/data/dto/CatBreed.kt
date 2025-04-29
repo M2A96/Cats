@@ -38,5 +38,5 @@ data class CatBreed(
     val wikipediaUrl: String,
     val hypoallergenic: Int,
     val referenceImageId: String,
-    val image: Image
+    val image: Image?
 )

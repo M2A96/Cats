@@ -1,6 +1,7 @@
 package io.maa96.cats.di
 
 import com.facebook.stetho.okhttp3.StethoInterceptor
+import com.google.gson.FieldNamingPolicy
 import com.google.gson.Gson
 import com.google.gson.GsonBuilder
 import com.google.gson.JsonDeserializer
@@ -51,6 +52,7 @@ object NetworkModule {
                     JsonPrimitive(src.time)
                 }
             )
+            .setFieldNamingPolicy(FieldNamingPolicy.LOWER_CASE_WITH_UNDERSCORES)
             .create()
     }
 

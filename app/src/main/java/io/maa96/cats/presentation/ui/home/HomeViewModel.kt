@@ -8,7 +8,6 @@ import io.maa96.cats.domain.model.Cat
 import io.maa96.cats.domain.model.Resource
 import io.maa96.cats.domain.usecase.GetCatBreedsUseCase
 import kotlinx.coroutines.FlowPreview
-import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.asStateFlow
@@ -58,26 +57,30 @@ class HomeViewModel @Inject constructor(
                 _searchQuery.value = event.query
             }
 
-            HomeScreenEvent.NavigateToFavorites -> TODO()
-            HomeScreenEvent.Refresh -> TODO()
-            is HomeScreenEvent.ToggleFavorite -> TODO()
+            HomeScreenEvent.NavigateToFavorites -> navigateToFavorites()
+            HomeScreenEvent.Refresh -> retry()
+            is HomeScreenEvent.ToggleFavorite -> toggleFavorite(event.breedId)
             HomeScreenEvent.ToggleFilterDialog -> TODO()
             HomeScreenEvent.ToggleTheme -> TODO()
         }
     }
 
-    fun updateSearchQuery(query: String) {
+    private fun navigateToFavorites() {
+        Log.d("TAG", "navigateToFavorites: Not Implemented Yet.")
+    }
+
+   private fun updateSearchQuery(query: String) {
         _searchQuery.value = query
     }
 
-    fun toggleFavorite(id: String) {
+    private fun toggleFavorite(id: String) {
         val updatedBreeds = _catBreeds.value.map {
             if (it.id == id) it.copy(isFavorite = !it.isFavorite) else it
         }
         _catBreeds.value = updatedBreeds
     }
 
-    fun retry() {
+    private fun retry() {
         loadCats()
     }
 

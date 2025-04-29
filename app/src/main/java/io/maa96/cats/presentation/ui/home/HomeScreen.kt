@@ -263,7 +263,7 @@ fun CatBreedCard(
                     Image(
                         painter = rememberAsyncImagePainter(
                             model = ImageRequest.Builder(LocalPlatformContext.current)
-                                .data(breed.imageUrl)
+                                .data(breed.images?.get(0))
                                 .size(rememberConstraintsSizeResolver())
                                 .build()
                         ),
@@ -521,11 +521,19 @@ fun CatBreedCardPreview() {
     CatsTheme {
         CatBreedCard(
             breed = Cat(
-                id = "beng",
-                name = "Bengal",
-                imageUrl = "",
-                temperament = "Alert, Agile, Energetic",
-                origin = "United States",
+                id = "siam",
+                name = "Siamese",
+                images = listOf("https://cdn2.thecatapi.com/images/xnsqonbjW.jpg"),
+                temperament = "Curious, Intelligent, Social",
+                origin = "Thailand",
+                description = "Bengals are a lot of fun to live with, but they're definitely not the cat for everyone, or for first-time cat owners. Extremely intelligent, curious and active, they demand a lot of interaction and woe betide the owner who doesn't provide it.",
+                lifeSpan = "12-16 years",
+                weight = "8-15 lbs",
+                hypoallergenic = 0,
+                affectionLevel = 3,
+                childFriendly = 3,
+                strangerFriendly = 3,
+                wikipediaUrl = "https://en.wikipedia.org/wiki/Bengal_cat",
                 isFavorite = true
             ),
             onClick = {},
@@ -545,18 +553,34 @@ fun HomeScreenPreview() {
                     Cat(
                         id = "beng",
                         name = "Bengal",
-                        imageUrl = "https://cdn2.thecatapi.com/images/xnsqonbjW.jpg",
+                        images = listOf("https://cdn2.thecatapi.com/images/xnsqonbjW.jpg"),
                         temperament = "Alert, Agile, Energetic",
+                        description = "Bengals are a lot of fun to live with, but they're definitely not the cat for everyone, or for first-time cat owners. Extremely intelligent, curious and active, they demand a lot of interaction and woe betide the owner who doesn't provide it.",
                         origin = "United States",
-                        isFavorite = true
+                        lifeSpan = "12-16 years",
+                        weight = "8-15 lbs",
+                        hypoallergenic = 0,
+                        affectionLevel = 3,
+                        childFriendly = 3,
+                        strangerFriendly = 3,
+                        wikipediaUrl = "https://en.wikipedia.org/wiki/Bengal_cat",
+                        isFavorite = true,
                     ),
                     Cat(
                         id = "siam",
                         name = "Siamese",
-                        imageUrl = "https://cdn2.thecatapi.com/images/xnsqonbjW.jpg",
+                        images = listOf("https://cdn2.thecatapi.com/images/xnsqonbjW.jpg"),
                         temperament = "Curious, Intelligent, Social",
                         origin = "Thailand",
-                        isFavorite = false
+                        description = "Bengals are a lot of fun to live with, but they're definitely not the cat for everyone, or for first-time cat owners. Extremely intelligent, curious and active, they demand a lot of interaction and woe betide the owner who doesn't provide it.",
+                        lifeSpan = "12-16 years",
+                        weight = "8-15 lbs",
+                        hypoallergenic = 0,
+                        affectionLevel = 3,
+                        childFriendly = 3,
+                        strangerFriendly = 3,
+                        wikipediaUrl = "https://en.wikipedia.org/wiki/Bengal_cat",
+                        isFavorite = true
                     )
                 )
             ),

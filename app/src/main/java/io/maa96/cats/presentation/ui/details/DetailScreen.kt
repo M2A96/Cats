@@ -53,7 +53,7 @@ import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import coil3.compose.rememberAsyncImagePainter
 import io.maa96.cats.R
-import io.maa96.cats.domain.model.CatDetail
+import io.maa96.cats.domain.model.Cat
 import io.maa96.cats.presentation.theme.CatsTheme
 
 @Composable
@@ -95,7 +95,7 @@ fun DetailScreen(
 
 @Composable
 fun DetailContent(
-    catDetail: CatDetail,
+    catDetail: Cat,
     selectedImageIndex: Int,
     onBackClick: () -> Unit,
     onFavoriteClick: () -> Unit,
@@ -116,7 +116,7 @@ fun DetailContent(
             // Main Image
             Image(
                 painter = rememberAsyncImagePainter(
-                    model = catDetail.images.getOrNull(selectedImageIndex) ?: catDetail.images.firstOrNull()
+                    model = catDetail.images?.getOrNull(selectedImageIndex) ?: catDetail.images?.firstOrNull()
                 ),
                 contentDescription = "${catDetail.name} ${stringResource(R.string.cat_image)}",
                 contentScale = ContentScale.Crop,
@@ -160,7 +160,7 @@ fun DetailContent(
 
         // Image Carousel
         ImageCarousel(
-            images = catDetail.images,
+            images = catDetail.images?: listOf(),
             selectedIndex = selectedImageIndex,
             onImageSelect = onImageSelect
         )
@@ -180,7 +180,7 @@ fun DetailContent(
             // Stats Row
             DetailStatsRow(
                 origin = catDetail.origin,
-                lifespan = catDetail.lifespan,
+                lifespan = catDetail.lifeSpan,
                 weight = catDetail.weight
             )
 
@@ -205,7 +205,7 @@ fun DetailContent(
             SectionTitle(title = stringResource(R.string.characteristics))
             CharacteristicItem(
                 label = stringResource(R.string.hypoallergenic),
-                value = if (catDetail.isHypoallergenic) stringResource(R.string.yes) else stringResource(R.string.no)
+                value = if (catDetail.hypoallergenic == 0) stringResource(R.string.yes) else stringResource(R.string.no)
             )
             CharacteristicItem(
                 label = stringResource(R.string.affection_level),
@@ -581,16 +581,16 @@ fun DetailScreenPreview() {
     CatsTheme {
         DetailScreen(
             state = DetailScreenState(
-                catDetail = CatDetail(
+                catDetail = Cat(
                     id = "beng",
                     name = "Bengal",
                     images = listOf("", "", "", ""),
                     description = "Bengals are a lot of fun to live with, but they're definitely not the cat for everyone, or for first-time cat owners. Extremely intelligent, curious and active, they demand a lot of interaction and woe betide the owner who doesn't provide it.",
                     temperament = "Alert, Agile, Energetic, Demanding, Intelligent",
                     origin = "United States",
-                    lifespan = "12-16 years",
+                    lifeSpan = "12-16 years",
                     weight = "8-15 lbs",
-                    isHypoallergenic = false,
+                    hypoallergenic = 0,
                     affectionLevel = 3,
                     childFriendly = 3,
                     strangerFriendly = 3,
