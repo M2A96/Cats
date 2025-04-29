@@ -74,10 +74,13 @@ class HomeViewModel @Inject constructor(
     }
 
     private fun toggleFavorite(id: String) {
-        val updatedBreeds = _catBreeds.value.map {
-            if (it.id == id) it.copy(isFavorite = !it.isFavorite) else it
+        _uiState.update { currentState ->
+            currentState.copy(
+                breeds = currentState.breeds.map {
+                    if (it.id == id) it.copy(isFavorite = !it.isFavorite) else it
+                }
+            )
         }
-        _catBreeds.value = updatedBreeds
     }
 
     private fun retry() {
