@@ -7,56 +7,66 @@ import dagger.hilt.android.lifecycle.HiltViewModel
 import io.maa96.cats.domain.model.Cat
 import io.maa96.cats.domain.model.Resource
 import io.maa96.cats.domain.usecase.GetCatBreedsUseCase
-import kotlinx.coroutines.FlowPreview
+import io.maa96.cats.domain.usecase.SearchBreedsUseCase
 import kotlinx.coroutines.flow.MutableStateFlow
-import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.catch
-import kotlinx.coroutines.flow.combine
-import kotlinx.coroutines.flow.debounce
-import kotlinx.coroutines.flow.stateIn
+import kotlinx.coroutines.flow.onStart
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
 import javax.inject.Inject
 
 @HiltViewModel
 class HomeViewModel @Inject constructor(
-    private val getCatBreedsUseCase: GetCatBreedsUseCase
+    private val getCatBreedsUseCase: GetCatBreedsUseCase,
+    private val searchBreedsUseCase: SearchBreedsUseCase,
+    private val searchDebouncer: SearchDebouncer
 ) : ViewModel() {
     private val _uiState = MutableStateFlow(HomeScreenState())
     val uiState = _uiState.asStateFlow()
 
-    private val _searchQuery = MutableStateFlow("")
-    val searchQuery = _searchQuery.asStateFlow()
-
-    private val _catBreeds = MutableStateFlow<List<Cat>>(emptyList())
-
-    @OptIn(FlowPreview::class)
-    val filteredCats = combine(
-        _catBreeds,
-        _searchQuery.debounce(300)
-    ) { breeds, query ->
-        if (query.isBlank()) {
-            breeds
-        } else {
-            breeds.filter { it.name.contains(query, ignoreCase = true) }
-        }
-    }.stateIn(
-        scope = viewModelScope,
-        started = SharingStarted.WhileSubscribed(5000),
-        initialValue = emptyList()
-    )
-
     init {
-        loadBreeds()
+        setupSearchDebouncing()
+    }
+
+    private fun setupSearchDebouncing() {
+        viewModelScope.launch {
+            searchDebouncer.getQueryFlow()
+                .collect { query ->
+                    if (query.isNotBlank()) {
+                        performSearch(query)
+                    } else {
+                        clearSearchResults()
+                        loadBreeds()
+                    }
+                }
+        }
+    }
+
+    private suspend fun performSearch(query: String) {
+        searchBreedsUseCase(query, 0)
+            .onStart { setLoading(true) }
+            .catch { error ->
+                Log.e("HomeViewModel", "getCatBreeds: error${error.message}")
+                _uiState.update { it.copy(isLoading = false) }
+            }
+            .collect { result ->
+                updateUiState(result)
+            }
+    }
+
+    private fun clearSearchResults() {
+        _uiState.update {
+            it.copy(
+                breeds = emptyList(),
+                isLoading = false,
+            )
+        }
     }
 
     fun onEvent(event: HomeScreenEvent) {
         when (event) {
-            is HomeScreenEvent.OnSearchQueryChange -> {
-                _searchQuery.value = event.query
-            }
-
+            is HomeScreenEvent.OnSearchQueryChange -> {}
             HomeScreenEvent.NavigateToFavorites -> navigateToFavorites()
             HomeScreenEvent.Refresh -> retry()
             is HomeScreenEvent.ToggleFavorite -> toggleFavorite(event.breedId)
@@ -70,9 +80,11 @@ class HomeViewModel @Inject constructor(
         Log.d("TAG", "navigateToFavorites: Not Implemented Yet.v")
     }
 
-   private fun updateSearchQuery(query: String) {
-        _searchQuery.value = query
+    private fun updateSearchQuery(query: String) {
+        _uiState.update { it.copy(searchQuery = query) }
+        searchDebouncer.setQuery(query)
     }
+
 
     private fun toggleFavorite(id: String) {
         _uiState.update { currentState ->
@@ -95,12 +107,12 @@ class HomeViewModel @Inject constructor(
                     Log.e("HomeViewModel", "getCatBreeds: error${it.message}")
                     _uiState.update { it.copy(isLoading = false) }
                 }.collect { result ->
-                    handleGetBreedsResult(result)
+                    updateUiState(result)
                 }
         }
     }
 
-    private fun handleGetBreedsResult(result: Resource<List<Cat>>) {
+    private fun updateUiState(result: Resource<List<Cat>>) {
         when (result) {
             is Resource.Error -> {
                 _uiState.update { it.copy(isLoading = false, error = result.message) }
@@ -119,5 +131,9 @@ class HomeViewModel @Inject constructor(
                 }
             }
         }
+    }
+
+    private fun setLoading(isLoading: Boolean) {
+        _uiState.update { it.copy(isLoading = isLoading) }
     }
 }

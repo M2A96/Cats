@@ -46,6 +46,23 @@ class CatBreedsRepositoryImpl @Inject constructor(
         }
     }
 
+    override suspend fun searchBreeds(query: String, attachImage: Int): Flow<Resource<List<Cat>>> {
+        return flow {
+            try {
+                emit(Resource.Loading(true))
+                val response = api.searchBreeds(query, attachImage)
+                val catBreeds = response.map { catBreed ->
+                    catBreedMapper.toDomain(catBreed)
+                }
+                emit(Resource.Loading(false))
+                emit(Resource.Success(catBreeds))
+            } catch (e: Exception) {
+                emit(Resource.Loading(false))
+                emit(Resource.Error(e.message ?: "Unknown error"))
+            }
+        }
+    }
+
     /**
      * This is a generic function for making a network request and caching it into database
      * [ResultType] is type of result that we get from our network request
@@ -70,7 +87,7 @@ class CatBreedsRepositoryImpl @Inject constructor(
                 saveFetchedResult(fetch())
                 query().map { Resource.Success(it) }
             } catch (throwable: Throwable) {
-                query().map { Resource.Error(throwable.message!!,it) }
+                query().map { Resource.Error(throwable.message!!, it) }
             }
         } else {
             query().map { Resource.Success(it) }

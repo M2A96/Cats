@@ -17,4 +17,10 @@ interface CatApi {
         @Path("breed_id") breedId: String,
     ): CatBreed
 
+    @GET("v1/breeds/search")
+    suspend fun searchBreeds(
+        @Query("q") query: String,
+        @Query("attach_image") attachImage: Int
+    ) : List<CatBreed>
+
 }
