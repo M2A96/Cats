@@ -48,7 +48,7 @@ class HomeViewModel @Inject constructor(
     )
 
     init {
-        loadCats()
+        loadBreeds()
     }
 
     fun onEvent(event: HomeScreenEvent) {
@@ -62,11 +62,12 @@ class HomeViewModel @Inject constructor(
             is HomeScreenEvent.ToggleFavorite -> toggleFavorite(event.breedId)
             HomeScreenEvent.ToggleFilterDialog -> TODO()
             HomeScreenEvent.ToggleTheme -> TODO()
+            HomeScreenEvent.LoadMoreBreeds -> TODO()
         }
     }
 
     private fun navigateToFavorites() {
-        Log.d("TAG", "navigateToFavorites: Not Implemented Yet.")
+        Log.d("TAG", "navigateToFavorites: Not Implemented Yet.v")
     }
 
    private fun updateSearchQuery(query: String) {
@@ -84,10 +85,10 @@ class HomeViewModel @Inject constructor(
     }
 
     private fun retry() {
-        loadCats()
+        loadBreeds()
     }
 
-    private fun loadCats() {
+    private fun loadBreeds() {
         viewModelScope.launch {
             getCatBreedsUseCase(limit = 10, page = 1)
                 .catch {

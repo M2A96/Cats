@@ -7,4 +7,5 @@ sealed class HomeScreenEvent {
     data object NavigateToFavorites : HomeScreenEvent()
     data object ToggleFilterDialog : HomeScreenEvent()
     data object ToggleTheme : HomeScreenEvent()
+    object LoadMoreBreeds : HomeScreenEvent()
 }

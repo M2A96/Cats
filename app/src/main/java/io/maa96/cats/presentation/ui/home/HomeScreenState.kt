@@ -7,6 +7,9 @@ data class HomeScreenState(
     val breeds: List<Cat> = emptyList(),
     val filteredBreeds: List<Cat> = emptyList(),
     val isLoading: Boolean = false,
+    val isLoadingMore: Boolean = false,
     val error: String? = null,
-    val showFilterDialog: Boolean = false
+    val showFilterDialog: Boolean = false,
+    val currentPage: Int = 0,
+    val hasMoreData: Boolean = true
 )

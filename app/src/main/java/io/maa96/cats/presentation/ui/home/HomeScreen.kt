@@ -42,6 +42,7 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material3.*
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
@@ -105,9 +106,15 @@ fun HomeScreen(
                 else -> {
                     CatBreedList(
                         breeds = state.breeds,
+                        isLoadingMore = state.isLoadingMore,
                         onBreedClick = onNavigateToDetails,
                         onFavoriteToggle = { breedId ->
                             onEvent(HomeScreenEvent.ToggleFavorite(breedId))
+                        },
+                        onLoadMore = {
+                            if (!state.isLoading && !state.isLoadingMore && state.hasMoreData) {
+                                onEvent(HomeScreenEvent.LoadMoreBreeds)
+                            }
                         }
                     )
                 }
@@ -217,8 +224,10 @@ fun SearchBar(
 @Composable
 fun CatBreedList(
     breeds: List<Cat>,
+    isLoadingMore: Boolean,
     onBreedClick: (String) -> Unit,
     onFavoriteToggle: (String) -> Unit,
+    onLoadMore: () -> Unit,
     modifier: Modifier = Modifier
 ) {
     LazyColumn(
@@ -237,6 +246,24 @@ fun CatBreedList(
                 onClick = { onBreedClick(breed.id) },
                 onFavoriteClick = { onFavoriteToggle(breed.id) }
             )
+
+            if (breed == breeds.lastOrNull()) {
+                LaunchedEffect(key1 = true) {
+                    onLoadMore()
+                }
+            }
+        }
+        if (isLoadingMore) {
+            item {
+                Box(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(16.dp),
+                    contentAlignment = Alignment.Center
+                ) {
+                    CircularProgressIndicator()
+                }
+            }
         }
     }
 }
