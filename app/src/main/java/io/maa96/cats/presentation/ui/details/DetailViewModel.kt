@@ -32,12 +32,21 @@ class DetailViewModel @Inject constructor(
     fun onEvent(event: DetailScreenEvent) {
         when (event) {
             DetailScreenEvent.NavigateBack -> TODO()
-            DetailScreenEvent.OpenWikipedia -> TODO()
-            DetailScreenEvent.Refresh -> TODO()
+            is DetailScreenEvent.Refresh -> refresh()
             is DetailScreenEvent.SelectImage -> TODO()
             DetailScreenEvent.ToggleFavorite -> TODO()
             is DetailScreenEvent.OnGetDetailResult -> getCatBreedDetailById(event.breedId)
+            is DetailScreenEvent.OpenWikipedia -> openWikipediaPage(event.wikipediaUrl)
         }
+    }
+
+    private fun refresh(){
+        val currentBreedId = _uiState.value.breedId
+        getCatBreedDetailById(currentBreedId)
+    }
+
+    private fun openWikipediaPage(url: String){
+
     }
 
     private fun getCatBreedDetailById(breedId: String) {

@@ -6,5 +6,6 @@ data class DetailScreenState(
     val isLoading: Boolean = false,
     val catDetail: Cat? = null,
     val error: String? = null,
-    val selectedImageIndex: Int = 0
+    val selectedImageIndex: Int = 0,
+    val breedId: String = ""
 )

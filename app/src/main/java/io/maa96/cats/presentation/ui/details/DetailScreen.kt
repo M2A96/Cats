@@ -72,12 +72,14 @@ fun DetailScreen(
                 state.isLoading -> {
                     ShimmerDetailScreen()
                 }
+
                 state.error != null -> {
                     ErrorState(
                         message = state.error,
                         onRetry = { onEvent(DetailScreenEvent.Refresh) }
                     )
                 }
+
                 state.catDetail != null -> {
                     DetailContent(
                         catDetail = state.catDetail,
@@ -85,7 +87,9 @@ fun DetailScreen(
                         onBackClick = { onEvent(DetailScreenEvent.NavigateBack) },
                         onFavoriteClick = { onEvent(DetailScreenEvent.ToggleFavorite) },
                         onImageSelect = { index -> onEvent(DetailScreenEvent.SelectImage(index)) },
-                        onWikipediaClick = { onEvent(DetailScreenEvent.OpenWikipedia) }
+                        onWikipediaClick = {
+                            onEvent(DetailScreenEvent.OpenWikipedia(it))
+                        }
                     )
                 }
             }
@@ -100,7 +104,7 @@ fun DetailContent(
     onBackClick: () -> Unit,
     onFavoriteClick: () -> Unit,
     onImageSelect: (Int) -> Unit,
-    onWikipediaClick: () -> Unit,
+    onWikipediaClick: (String) -> Unit,
     modifier: Modifier = Modifier
 ) {
     Column(
@@ -116,7 +120,8 @@ fun DetailContent(
             // Main Image
             Image(
                 painter = rememberAsyncImagePainter(
-                    model = catDetail.images?.getOrNull(selectedImageIndex) ?: catDetail.images?.firstOrNull()
+                    model = catDetail.images?.getOrNull(selectedImageIndex)
+                        ?: catDetail.images?.firstOrNull()
                 ),
                 contentDescription = "${catDetail.name} ${stringResource(R.string.cat_image)}",
                 contentScale = ContentScale.Crop,
@@ -160,7 +165,7 @@ fun DetailContent(
 
         // Image Carousel
         ImageCarousel(
-            images = catDetail.images?: listOf(),
+            images = catDetail.images ?: listOf(),
             selectedIndex = selectedImageIndex,
             onImageSelect = onImageSelect
         )
@@ -205,7 +210,9 @@ fun DetailContent(
             SectionTitle(title = stringResource(R.string.characteristics))
             CharacteristicItem(
                 label = stringResource(R.string.hypoallergenic),
-                value = if (catDetail.hypoallergenic == 0) stringResource(R.string.yes) else stringResource(R.string.no)
+                value = if (catDetail.hypoallergenic == 0) stringResource(R.string.yes) else stringResource(
+                    R.string.no
+                )
             )
             CharacteristicItem(
                 label = stringResource(R.string.affection_level),
@@ -224,7 +231,7 @@ fun DetailContent(
 
             // Wikipedia Button
             Button(
-                onClick = onWikipediaClick,
+                onClick = { onWikipediaClick(catDetail.wikipediaUrl) },
                 modifier = Modifier.fillMaxWidth(),
                 shape = RoundedCornerShape(24.dp),
                 colors = ButtonDefaults.buttonColors(

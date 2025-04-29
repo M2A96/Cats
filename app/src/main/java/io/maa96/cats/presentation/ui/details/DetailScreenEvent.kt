@@ -5,6 +5,6 @@ sealed class DetailScreenEvent {
     object NavigateBack : DetailScreenEvent()
     object Refresh : DetailScreenEvent()
     object ToggleFavorite : DetailScreenEvent()
-    object OpenWikipedia : DetailScreenEvent()
+    data class OpenWikipedia(val wikipediaUrl: String) : DetailScreenEvent()
     data class SelectImage(val index: Int) : DetailScreenEvent()
 }
