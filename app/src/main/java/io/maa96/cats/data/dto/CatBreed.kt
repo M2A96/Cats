@@ -1,5 +1,7 @@
 package io.maa96.cats.data.dto
 
+import io.maa96.cats.data.source.local.db.entity.CatBreedEntity
+
 data class CatBreed(
     val weight: Weight,
     val id: String,
@@ -39,4 +41,21 @@ data class CatBreed(
     val hypoallergenic: Int,
     val referenceImageId: String,
     val image: Image?
+)
+
+fun CatBreed.toEntity() = CatBreedEntity(
+    id = id,
+    name = name,
+    images = image?.let { listOf( it.url) },
+    description = description,
+    temperament = temperament,
+    origin = origin,
+    lifeSpan = lifeSpan,
+    weight = weight.toString(),
+    hypoallergenic = hypoallergenic,
+    affectionLevel = affectionLevel,
+    childFriendly = childFriendly,
+    strangerFriendly = strangerFriendly,
+    wikipediaUrl = wikipediaUrl,
+    isFavorite = false,
 )

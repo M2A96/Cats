@@ -15,10 +15,9 @@ import javax.inject.Singleton
 object DatabaseModule {
     @Provides
     @Singleton
-    fun provideRoomDatabase(context: Context): CatsDatabase {
-        return Room
-            .databaseBuilder(context, CatsDatabase::class.java, CatsDatabase.DB_NAME)
-            .fallbackToDestructiveMigration(false)
-            .build()
-    }
+    fun provideRoomDatabase(context: Context): CatsDatabase = CatsDatabase.getInstance(context)
+
+    @Provides
+    @Singleton
+    fun provideBreedDao(db:CatsDatabase) = db.breedDao()
 }
