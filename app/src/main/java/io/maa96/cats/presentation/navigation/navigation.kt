@@ -38,7 +38,10 @@ fun NavGraphBuilder.catsNavGraph(navController: NavHostController){
         val state by viewModel.uiState.collectAsState()
         DetailScreen(
             state = state,
-            onEvent = viewModel::onEvent
+            onEvent = viewModel::onEvent,
+            onBackClick = {
+                navController.popBackStack()
+            }
         )
     }
 }

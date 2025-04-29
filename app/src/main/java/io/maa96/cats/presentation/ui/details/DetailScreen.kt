@@ -60,7 +60,8 @@ import io.maa96.cats.presentation.theme.CatsTheme
 fun DetailScreen(
     state: DetailScreenState,
     modifier: Modifier = Modifier,
-    onEvent: (DetailScreenEvent) -> Unit
+    onEvent: (DetailScreenEvent) -> Unit,
+    onBackClick: () -> Unit
 ) {
     Scaffold { paddingValues ->
         Box(
@@ -84,7 +85,7 @@ fun DetailScreen(
                     DetailContent(
                         catDetail = state.catDetail,
                         selectedImageIndex = state.selectedImageIndex,
-                        onBackClick = { onEvent(DetailScreenEvent.NavigateBack) },
+                        onBackClick = onBackClick,
                         onFavoriteClick = { onEvent(DetailScreenEvent.ToggleFavorite) },
                         onImageSelect = { index -> onEvent(DetailScreenEvent.SelectImage(index)) },
                         onWikipediaClick = {
@@ -605,7 +606,8 @@ fun DetailScreenPreview() {
                     isFavorite = true
                 )
             ),
-            onEvent = {}
+            onEvent = {},
+            onBackClick = {}
         )
     }
 }

@@ -31,7 +31,6 @@ class DetailViewModel @Inject constructor(
 
     fun onEvent(event: DetailScreenEvent) {
         when (event) {
-            DetailScreenEvent.NavigateBack -> TODO()
             is DetailScreenEvent.Refresh -> refresh()
             is DetailScreenEvent.SelectImage -> TODO()
             DetailScreenEvent.ToggleFavorite -> TODO()
