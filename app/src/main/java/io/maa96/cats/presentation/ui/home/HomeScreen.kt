@@ -55,10 +55,11 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.tooling.preview.Preview
+import coil.request.ImageRequest
 import coil3.compose.LocalPlatformContext
 import coil3.compose.rememberConstraintsSizeResolver
-import coil3.request.ImageRequest
 import io.maa96.cats.presentation.theme.CatsTheme
+import io.maa96.cats.presentation.ui.DynamicAsyncImage
 
 // Updated HomeScreen to include both error handling mechanisms
 @Composable
@@ -312,17 +313,14 @@ fun CatBreedCard(
                         .fillMaxWidth()
                         .height(180.dp)
                 ) {
-                    Image(
-                        painter = rememberAsyncImagePainter(
-                            model = ImageRequest.Builder(LocalPlatformContext.current)
-                                .data(breed.images?.get(0))
-                                .size(rememberConstraintsSizeResolver())
-                                .build()
-                        ),
-                        contentDescription = "${breed.name} ${stringResource(R.string.cat_image)}",
-                        contentScale = ContentScale.Crop,
-                        modifier = Modifier.fillMaxSize()
-                    )
+                    breed.images?.get(0)?.let {
+                        DynamicAsyncImage(
+                            imageUrl = it,
+                            contentDescription = "Cat Image",
+                            modifier = modifier,
+                            contentScale = ContentScale.Crop
+                        )
+                    }
                 }
 
                 Column(modifier = Modifier.padding(16.dp)) {
