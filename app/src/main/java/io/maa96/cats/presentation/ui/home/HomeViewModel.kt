@@ -30,6 +30,7 @@ class HomeViewModel @Inject constructor(
 
     init {
         setupSearchDebouncing()
+        loadBreeds()
     }
 
     private fun setupSearchDebouncing() {
@@ -47,6 +48,9 @@ class HomeViewModel @Inject constructor(
     }
 
     private suspend fun performSearch(query: String) {
+        // Reset pagination when performing a new search
+        _uiState.update { it.copy(currentPage = 0, hasMoreData = true) }
+        
         searchBreedsUseCase(query, 0)
             .onStart { setLoading(true) }
             .catch { error ->
@@ -54,7 +58,7 @@ class HomeViewModel @Inject constructor(
                 _uiState.update { it.copy(isLoading = false) }
             }
             .collect { result ->
-                updateUiState(result)
+                updateUiState(result, isInitialLoad = true)
             }
     }
 
@@ -69,13 +73,13 @@ class HomeViewModel @Inject constructor(
 
     fun onEvent(event: HomeScreenEvent) {
         when (event) {
-            is HomeScreenEvent.OnSearchQueryChange -> {}
+            is HomeScreenEvent.OnSearchQueryChange -> updateSearchQuery(event.query)
             HomeScreenEvent.NavigateToFavorites -> navigateToFavorites()
             HomeScreenEvent.Refresh -> retry()
             is HomeScreenEvent.ToggleFavorite -> toggleFavorite(event.breedId)
             HomeScreenEvent.ToggleFilterDialog -> TODO()
             HomeScreenEvent.ToggleTheme -> TODO()
-            HomeScreenEvent.LoadMoreBreeds -> TODO()
+            HomeScreenEvent.LoadMoreBreeds -> loadMoreBreeds()
             HomeScreenEvent.ClearError -> clearError()
         }
     }
@@ -104,29 +108,86 @@ class HomeViewModel @Inject constructor(
     }
 
     private fun retry() {
+        _uiState.update { it.copy(currentPage = 0) }
         loadBreeds()
     }
 
     private fun loadBreeds() {
         viewModelScope.launch {
-            getCatBreedsUseCase(limit = 10, page = 1)
+            // Always start with page 1 for initial load
+            val page = 1
+            
+            getCatBreedsUseCase(limit = 10, page = page)
+                .onStart { setLoading(true) }
                 .catch {
                     _uiState.update { it.copy(isLoading = false) }
                 }.collect { result ->
-                    updateUiState(result)
+                    updateUiState(result, isInitialLoad = true)
+                    _uiState.update { it.copy(currentPage = page) }
+                }
+        }
+    }
+    
+    private fun loadMoreBreeds() {
+        if (_uiState.value.isLoading || _uiState.value.isLoadingMore || !_uiState.value.hasMoreData) {
+            return
+        }
+        
+        viewModelScope.launch {
+            val currentState = _uiState.value
+            val nextPage = currentState.currentPage + 1
+            
+            _uiState.update { it.copy(isLoadingMore = true) }
+            
+            getCatBreedsUseCase(limit = 10, page = nextPage)
+                .catch { error ->
+                    Log.e("HomeViewModel", "loadMoreBreeds error: ${error.message}")
+                    _uiState.update { it.copy(isLoadingMore = false) }
+                }.collect { result ->
+                    when (result) {
+                        is Resource.Success -> {
+                            val newBreeds = result.data ?: emptyList()
+                            if (newBreeds.isEmpty()) {
+                                _uiState.update { it.copy(
+                                    isLoadingMore = false,
+                                    hasMoreData = false
+                                )}
+                            } else {
+                                val updatedBreeds = currentState.breeds + newBreeds
+                                _uiState.update { it.copy(
+                                    breeds = updatedBreeds,
+                                    isLoadingMore = false,
+                                    currentPage = nextPage,
+                                    error = null,
+                                    isStale = false,
+                                    lastUpdated = getCurrentDateTime()
+                                )}
+                            }
+                        }
+                        is Resource.Error -> {
+                            _uiState.update { it.copy(
+                                isLoadingMore = false,
+                                error = result.message
+                            )}
+                        }
+                        is Resource.Loading -> {
+                            // Already handled by setting isLoadingMore = true
+                        }
+                    }
                 }
         }
     }
 
-    private fun updateUiState(result: Resource<List<Cat>>) {
+    private fun updateUiState(result: Resource<List<Cat>>, isInitialLoad: Boolean = false) {
         when (result) {
             is Resource.Error -> {
                 // Check if we have data to show even with an error
                 if (result.data.isNullOrEmpty().not()) {
                     _uiState.update { currentState ->
                         currentState.copy(
-                            breeds = result.data ?: listOf(),
+                            breeds = if (isInitialLoad) result.data ?: listOf() else currentState.breeds,
                             isLoading = false,
+                            isLoadingMore = false,
                             error = result.message,
                             isStale = true
                         )
@@ -135,6 +196,7 @@ class HomeViewModel @Inject constructor(
                     _uiState.update { currentState ->
                         currentState.copy(
                             isLoading = false,
+                            isLoadingMore = false,
                             error = result.message
                         )
                     }
@@ -142,16 +204,23 @@ class HomeViewModel @Inject constructor(
             }
 
             is Resource.Loading -> {
-                _uiState.update { it.copy(isLoading = true) }
+                if (isInitialLoad) {
+                    _uiState.update { it.copy(isLoading = true) }
+                } else {
+                    _uiState.update { it.copy(isLoadingMore = true) }
+                }
             }
 
             is Resource.Success -> {
-                _uiState.update {currentState ->
+                val newData = result.data ?: listOf()
+                _uiState.update { currentState ->
                     currentState.copy(
-                        breeds = result.data ?: listOf(),
+                        breeds = if (isInitialLoad) newData else currentState.breeds + newData,
                         isLoading = false,
+                        isLoadingMore = false,
                         error = null,
                         isStale = false,
+                        hasMoreData = newData.isNotEmpty(),
                         lastUpdated = getCurrentDateTime()
                     )
                 }
