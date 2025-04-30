@@ -8,4 +8,5 @@ sealed class HomeScreenEvent {
     data object ToggleFilterDialog : HomeScreenEvent()
     data object ToggleTheme : HomeScreenEvent()
     object LoadMoreBreeds : HomeScreenEvent()
+    object ClearError : HomeScreenEvent()
 }

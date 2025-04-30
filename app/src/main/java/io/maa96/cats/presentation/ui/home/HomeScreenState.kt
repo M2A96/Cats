@@ -11,5 +11,7 @@ data class HomeScreenState(
     val error: String? = null,
     val showFilterDialog: Boolean = false,
     val currentPage: Int = 0,
-    val hasMoreData: Boolean = true
+    val hasMoreData: Boolean = true,
+    val isStale: Boolean = false,
+    val lastUpdated: String? = null
 )

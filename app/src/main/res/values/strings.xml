@@ -35,4 +35,14 @@
     <string name="high">High</string>
     <string name="very_high">Very High</string>
     <string name="unknown">Unknown</string>
+
+    <string name="error_timeout">Showing saved data. Couldn\'t refresh: connection timed out.</string>
+    <string name="error_no_internet">Showing saved data. Couldn\'t refresh: no internet connection.</string>
+    <string name="error_server">Showing saved data. Couldn\'t refresh: server error.</string>
+    <string name="error_refresh_generic">Showing saved data. Couldn\'t refresh: please try again later.</string>
+    <string name="retry">Retry</string>
+    <string name="showing_cached_data">Showing cached data from %s</string>
+    <string name="refresh">Refresh</string>
+    <string name="unknown_time">unknown time</string>
+    <string name="last_updated">Last updated: %s</string>
 </resources>

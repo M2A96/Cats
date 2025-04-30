@@ -14,6 +14,9 @@ import kotlinx.coroutines.flow.catch
 import kotlinx.coroutines.flow.onStart
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
+import java.text.SimpleDateFormat
+import java.util.Date
+import java.util.Locale
 import javax.inject.Inject
 
 @HiltViewModel
@@ -73,9 +76,13 @@ class HomeViewModel @Inject constructor(
             HomeScreenEvent.ToggleFilterDialog -> TODO()
             HomeScreenEvent.ToggleTheme -> TODO()
             HomeScreenEvent.LoadMoreBreeds -> TODO()
+            HomeScreenEvent.ClearError -> clearError()
         }
     }
 
+    private fun clearError() {
+        _uiState.update { it.copy(error = null) }
+    }
     private fun navigateToFavorites() {
         Log.d("TAG", "navigateToFavorites: Not Implemented Yet.v")
     }
@@ -104,7 +111,6 @@ class HomeViewModel @Inject constructor(
         viewModelScope.launch {
             getCatBreedsUseCase(limit = 10, page = 1)
                 .catch {
-                    Log.e("HomeViewModel", "getCatBreeds: error${it.message}")
                     _uiState.update { it.copy(isLoading = false) }
                 }.collect { result ->
                     updateUiState(result)
@@ -115,7 +121,24 @@ class HomeViewModel @Inject constructor(
     private fun updateUiState(result: Resource<List<Cat>>) {
         when (result) {
             is Resource.Error -> {
-                _uiState.update { it.copy(isLoading = false, error = result.message) }
+                // Check if we have data to show even with an error
+                if (result.data.isNullOrEmpty().not()) {
+                    _uiState.update { currentState ->
+                        currentState.copy(
+                            breeds = result.data ?: listOf(),
+                            isLoading = false,
+                            error = result.message,
+                            isStale = true
+                        )
+                    }
+                } else {
+                    _uiState.update { currentState ->
+                        currentState.copy(
+                            isLoading = false,
+                            error = result.message
+                        )
+                    }
+                }
             }
 
             is Resource.Loading -> {
@@ -123,16 +146,23 @@ class HomeViewModel @Inject constructor(
             }
 
             is Resource.Success -> {
-                _uiState.update {
-                    it.copy(
+                _uiState.update {currentState ->
+                    currentState.copy(
+                        breeds = result.data ?: listOf(),
                         isLoading = false,
-                        breeds = result.data ?: emptyList()
+                        error = null,
+                        isStale = false,
+                        lastUpdated = getCurrentDateTime()
                     )
                 }
             }
         }
     }
 
+    private fun getCurrentDateTime(): String {
+        val formatter = SimpleDateFormat("MMM dd, HH:mm", Locale.getDefault())
+        return formatter.format(Date())
+    }
     private fun setLoading(isLoading: Boolean) {
         _uiState.update { it.copy(isLoading = isLoading) }
     }

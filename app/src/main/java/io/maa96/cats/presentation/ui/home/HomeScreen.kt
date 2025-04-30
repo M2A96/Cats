@@ -43,6 +43,7 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material3.*
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
@@ -59,6 +60,7 @@ import coil3.compose.rememberConstraintsSizeResolver
 import coil3.request.ImageRequest
 import io.maa96.cats.presentation.theme.CatsTheme
 
+// Updated HomeScreen to include both error handling mechanisms
 @Composable
 fun HomeScreen(
     state: HomeScreenState,
@@ -66,6 +68,8 @@ fun HomeScreen(
     onEvent: (HomeScreenEvent) -> Unit,
     onNavigateToDetails: (String) -> Unit
 ) {
+    val snackbarHostState = remember { SnackbarHostState() }
+
     Scaffold(
         topBar = {
             HomeAppBar(
@@ -77,7 +81,8 @@ fun HomeScreen(
             ThemeToggleFab(
                 onToggleTheme = { onEvent(HomeScreenEvent.ToggleTheme) }
             )
-        }
+        },
+        snackbarHost = { SnackbarHost(hostState = snackbarHostState) }
     ) { paddingValues ->
         Column(
             modifier = modifier
@@ -90,11 +95,20 @@ fun HomeScreen(
                 onQueryChange = { onEvent(HomeScreenEvent.OnSearchQueryChange(it)) }
             )
 
+            // Show stale data banner if we have stale data and a network error
+            if (state.isStale && state.error != null && !state.isLoading) {
+                StaleBanner(
+                    lastUpdated = state.lastUpdated ?: stringResource(R.string.unknown_time),
+                    onRefresh = { onEvent(HomeScreenEvent.Refresh) }
+                )
+            }
+
             when {
                 state.isLoading -> {
                     ShimmerCatBreedList()
                 }
-                state.error != null -> {
+                state.error != null && state.breeds.isEmpty() -> {
+                    // Complete error state - no cached data available
                     ErrorState(
                         message = state.error,
                         onRetry = { onEvent(HomeScreenEvent.Refresh) }
@@ -104,6 +118,7 @@ fun HomeScreen(
                     EmptySearchResult(query = state.searchQuery)
                 }
                 else -> {
+                    // We have data to show (either fresh or stale)
                     CatBreedList(
                         breeds = state.breeds,
                         isLoadingMore = state.isLoadingMore,
@@ -117,6 +132,16 @@ fun HomeScreen(
                             }
                         }
                     )
+
+                    // Show network error snackbar if we have an error but also have cached data
+                    if (state.error != null && !state.isLoading) {
+                        NetworkErrorSnackbar(
+                            errorMessage = state.error,
+                            onDismiss = { onEvent(HomeScreenEvent.ClearError) },
+                            onRetry = { onEvent(HomeScreenEvent.Refresh) },
+                            snackbarHostState = snackbarHostState
+                        )
+                    }
                 }
             }
         }
@@ -518,7 +543,101 @@ fun ErrorState(
         }
     }
 }
+/**
+ * Shows a non-blocking error message as a snackbar when we have cached data
+ * but the network refresh failed
+ */
+@Composable
+fun NetworkErrorSnackbar(
+    errorMessage: String?,
+    onDismiss: () -> Unit,
+    onRetry: () -> Unit,
+    snackbarHostState: SnackbarHostState
+) {
+    // Extract all string resources in the composable context
+    val timeoutMessage = stringResource(R.string.error_timeout)
+    val noInternetMessage = stringResource(R.string.error_no_internet)
+    val serverErrorMessage = stringResource(R.string.error_server)
+    val genericErrorMessage = stringResource(R.string.error_refresh_generic)
+    val retryLabel = stringResource(R.string.retry)
 
+    errorMessage?.let {
+        // Format the error message to be user-friendly
+        val userFriendlyMessage = when {
+            it.contains("timeout", ignoreCase = true) -> timeoutMessage
+            it.contains("host", ignoreCase = true) || it.contains("internet", ignoreCase = true) -> noInternetMessage
+            it.contains("server", ignoreCase = true) || it.contains("500", ignoreCase = true) -> serverErrorMessage
+            else -> genericErrorMessage
+        }
+
+        LaunchedEffect(errorMessage) {
+            val result = snackbarHostState.showSnackbar(
+                message = userFriendlyMessage,
+                actionLabel = retryLabel,
+                duration = SnackbarDuration.Long
+            )
+
+            when (result) {
+                SnackbarResult.ActionPerformed -> onRetry()
+                SnackbarResult.Dismissed -> onDismiss()
+            }
+        }
+    }
+}
+
+/**
+ * Small banner that shows at the top of content to indicate the data is stale
+ */
+@Composable
+fun StaleBanner(
+    lastUpdated: String,
+    onRefresh: () -> Unit,
+    modifier: Modifier = Modifier
+) {
+    Surface(
+        color = MaterialTheme.colorScheme.errorContainer.copy(alpha = 0.7f),
+        modifier = modifier.fillMaxWidth()
+    ) {
+        Row(
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(8.dp),
+            verticalAlignment = Alignment.CenterVertically,
+            horizontalArrangement = Arrangement.SpaceBetween
+        ) {
+            Row(
+                verticalAlignment = Alignment.CenterVertically
+            ) {
+                Icon(
+                    imageVector = Icons.Default.Info,
+                    contentDescription = null,
+                    tint = MaterialTheme.colorScheme.onErrorContainer,
+                    modifier = Modifier.size(18.dp)
+                )
+
+                Spacer(modifier = Modifier.width(8.dp))
+
+                Text(
+                    text = stringResource(R.string.showing_cached_data, lastUpdated),
+                    style = MaterialTheme.typography.bodySmall,
+                    color = MaterialTheme.colorScheme.onErrorContainer
+                )
+            }
+
+            TextButton(
+                onClick = onRefresh,
+                colors = ButtonDefaults.textButtonColors(
+                    contentColor = MaterialTheme.colorScheme.onErrorContainer
+                )
+            ) {
+                Text(
+                    text = stringResource(R.string.refresh),
+                    style = MaterialTheme.typography.bodySmall
+                )
+            }
+        }
+    }
+}
 // Preview functions
 @Preview(showBackground = true)
 @Composable
