@@ -18,6 +18,9 @@ interface BreedDao {
 
     @Query("Select * From breed WHERE `id` == :breedId")
     fun getBreedById(breedId: String): Flow<CatBreedEntity>
+    
+    @Query("Select * From breed WHERE `id` == :breedId")
+    suspend fun getBreedByIdSync(breedId: String): CatBreedEntity?
 
     @Query("SELECT * FROM breed WHERE name LIKE '%' || :search || '%'")
     fun searchByName(search: String): Flow<List<CatBreedEntity>>

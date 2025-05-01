@@ -1,5 +1,7 @@
 package io.maa96.cats.domain.model
 
+import io.maa96.cats.data.source.local.db.entity.CatBreedEntity
+
 data class Cat(
     val id: String,
     val name: String,
@@ -15,4 +17,21 @@ data class Cat(
     val strangerFriendly: Int, // 1-5
     val wikipediaUrl: String,
     val isFavorite: Boolean = false
+)
+
+fun Cat.toEntity() = CatBreedEntity(
+    id = id,
+    name = name,
+    images = images,
+    description = description,
+    origin = origin,
+    temperament = temperament,
+    lifeSpan = lifeSpan,
+    weight = weight,
+    hypoallergenic = hypoallergenic,
+    affectionLevel = affectionLevel,
+    childFriendly = childFriendly,
+    strangerFriendly = strangerFriendly,
+    wikipediaUrl = wikipediaUrl,
+    isFavorite = isFavorite
 )

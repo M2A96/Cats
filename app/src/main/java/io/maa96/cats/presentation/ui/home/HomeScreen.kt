@@ -252,7 +252,7 @@ fun CatBreedList(
     breeds: List<Cat>,
     isLoadingMore: Boolean,
     onBreedClick: (String) -> Unit,
-    onFavoriteToggle: (String) -> Unit,
+    onFavoriteToggle: (Cat) -> Unit,
     onLoadMore: () -> Unit,
     modifier: Modifier = Modifier
 ) {
@@ -270,7 +270,7 @@ fun CatBreedList(
             CatBreedCard(
                 breed = breed,
                 onClick = { onBreedClick(breed.id) },
-                onFavoriteClick = { onFavoriteToggle(breed.id) }
+                onFavoriteClick = { onFavoriteToggle(breed) }
             )
 
             if (breed == breeds.lastOrNull()) {

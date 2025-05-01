@@ -8,8 +8,10 @@ import io.maa96.cats.data.source.local.db.entity.toDomain
 import io.maa96.cats.data.source.remote.api.CatApi
 import io.maa96.cats.domain.model.Cat
 import io.maa96.cats.domain.model.Resource
+import io.maa96.cats.domain.model.toEntity
 import io.maa96.cats.domain.repository.CatBreedsRepository
 import kotlinx.coroutines.flow.Flow
+import kotlinx.coroutines.flow.flow
 import kotlinx.coroutines.flow.map
 import javax.inject.Inject
 
@@ -68,4 +70,15 @@ class CatBreedsRepositoryImpl @Inject constructor(
             }
         }
     )
+
+    override suspend fun updateFavoriteStatus(breed: Cat): Flow<Resource<Boolean>> = flow {
+        try {
+            emit(Resource.Loading())
+            dao.insertBreed(breed.toEntity())
+            emit(Resource.Success(true))
+
+        } catch (e: Exception) {
+            emit(Resource.Error(e.message ?: "An error occurred", false))
+        }
+    }
 }

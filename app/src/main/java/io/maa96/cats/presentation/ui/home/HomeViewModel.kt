@@ -8,6 +8,7 @@ import io.maa96.cats.domain.model.Cat
 import io.maa96.cats.domain.model.Resource
 import io.maa96.cats.domain.usecase.GetCatBreedsUseCase
 import io.maa96.cats.domain.usecase.SearchBreedsUseCase
+import io.maa96.cats.domain.usecase.UpdateFavoriteStatusUseCase
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.catch
@@ -23,6 +24,7 @@ import javax.inject.Inject
 class HomeViewModel @Inject constructor(
     private val getCatBreedsUseCase: GetCatBreedsUseCase,
     private val searchBreedsUseCase: SearchBreedsUseCase,
+    private val updateFavoriteStatusUseCase: UpdateFavoriteStatusUseCase,
     private val searchDebouncer: SearchDebouncer
 ) : ViewModel() {
     private val _uiState = MutableStateFlow(HomeScreenState())
@@ -76,7 +78,7 @@ class HomeViewModel @Inject constructor(
             is HomeScreenEvent.OnSearchQueryChange -> updateSearchQuery(event.query)
             HomeScreenEvent.NavigateToFavorites -> navigateToFavorites()
             HomeScreenEvent.Refresh -> retry()
-            is HomeScreenEvent.ToggleFavorite -> toggleFavorite(event.breedId)
+            is HomeScreenEvent.ToggleFavorite -> toggleFavorite(event.breed)
             HomeScreenEvent.ToggleFilterDialog -> TODO()
             HomeScreenEvent.ToggleTheme -> TODO()
             HomeScreenEvent.LoadMoreBreeds -> loadMoreBreeds()
@@ -97,13 +99,61 @@ class HomeViewModel @Inject constructor(
     }
 
 
-    private fun toggleFavorite(id: String) {
+
+    private fun toggleFavorite(breed: Cat) {
+        // Store the original favorite status to revert if needed
+        val originalIsFavorite = breed.isFavorite
+        val updatedBreed = breed.copy(isFavorite = !originalIsFavorite)
+        
+        // Update UI state with the new favorite status (optimistic update)
+        // Preserve the original order by using indexed map to update only the target item
         _uiState.update { currentState ->
-            currentState.copy(
-                breeds = currentState.breeds.map {
-                    if (it.id == id) it.copy(isFavorite = !it.isFavorite) else it
+            // Create a new list with the same order, just updating the target item
+            val updatedList = currentState.breeds.toMutableList()
+            val index = updatedList.indexOfFirst { it.id == breed.id }
+            if (index != -1) {
+                updatedList[index] = updatedBreed
+            }
+            
+            currentState.copy(breeds = updatedList)
+        }
+        
+        viewModelScope.launch {
+            updateFavoriteStatusUseCase(updatedBreed)
+                .catch { error ->
+                    Log.e("HomeViewModel", "toggleFavorite error: ${error.message}")
+                    // Revert UI state if operation fails
+                    revertFavoriteStatus(breed.id, originalIsFavorite)
                 }
-            )
+                .collect { result ->
+                    when (result) {
+                        is Resource.Error -> {
+                            Log.e("HomeViewModel", "toggleFavorite failed: ${result.message}")
+                            // Revert UI state if database update fails
+                            revertFavoriteStatus(breed.id, originalIsFavorite)
+                        }
+                        is Resource.Success -> {
+                            Log.d("HomeViewModel", "toggleFavorite success for breed ${breed.id}")
+                            // Success case - UI is already updated
+                        }
+                        is Resource.Loading -> {
+                            // Loading state is handled by optimistic UI update
+                        }
+                    }
+                }
+        }
+    }
+    
+    private fun revertFavoriteStatus(breedId: String, originalIsFavorite: Boolean) {
+        _uiState.update { currentState ->
+            // Create a new list with the same order, just updating the target item
+            val updatedList = currentState.breeds.toMutableList()
+            val index = updatedList.indexOfFirst { it.id == breedId }
+            if (index != -1) {
+                updatedList[index] = updatedList[index].copy(isFavorite = originalIsFavorite)
+            }
+            
+            currentState.copy(breeds = updatedList)
         }
     }
 
@@ -214,8 +264,34 @@ class HomeViewModel @Inject constructor(
             is Resource.Success -> {
                 val newData = result.data ?: listOf()
                 _uiState.update { currentState ->
+                    // If we're loading initial data and we already have breeds with favorite status
+                    // we need to preserve the favorite status of existing items
+                    val processedData = if (isInitialLoad && currentState.breeds.isNotEmpty()) {
+                        // Create a map of existing breeds by ID for quick lookup
+                        val existingBreedsMap = currentState.breeds.associateBy { it.id }
+                        
+                        // For each new breed, preserve its favorite status if it exists in our current list
+                        newData.map { newBreed ->
+                            existingBreedsMap[newBreed.id]?.let { existingBreed ->
+                                // Keep the favorite status from the existing breed
+                                newBreed.copy(isFavorite = existingBreed.isFavorite)
+                            } ?: newBreed // Use new breed as is if not in our current list
+                        }
+                    } else if (!isInitialLoad && newData.isNotEmpty()) {
+                        // For pagination (loading more), we need to preserve the order and favorite status
+                        val existingBreedsMap = currentState.breeds.associateBy { it.id }
+                        val newBreedsList = currentState.breeds.toMutableList()
+                        
+                        // Add only new breeds that aren't already in the list
+                        newBreedsList.addAll(newData.filter { newBreed -> !existingBreedsMap.containsKey(newBreed.id) })
+                        newBreedsList
+                    } else {
+                        // Just use the new data as is
+                        newData
+                    }
+                    
                     currentState.copy(
-                        breeds = if (isInitialLoad) newData else currentState.breeds + newData,
+                        breeds = processedData,
                         isLoading = false,
                         isLoadingMore = false,
                         error = null,
