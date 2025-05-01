@@ -65,10 +65,13 @@ class HomeViewModel @Inject constructor(
     }
 
     private fun clearSearchResults() {
-        _uiState.update {
-            it.copy(
+        _uiState.update { currentState ->
+            currentState.copy(
                 breeds = emptyList(),
+                filteredBreeds = emptyList(),
                 isLoading = false,
+                // Maintain the showingFavoritesOnly state
+                showingFavoritesOnly = currentState.showingFavoritesOnly
             )
         }
     }
@@ -76,7 +79,7 @@ class HomeViewModel @Inject constructor(
     fun onEvent(event: HomeScreenEvent) {
         when (event) {
             is HomeScreenEvent.OnSearchQueryChange -> updateSearchQuery(event.query)
-            HomeScreenEvent.NavigateToFavorites -> navigateToFavorites()
+            HomeScreenEvent.ShowFavorites -> showFavorites()
             HomeScreenEvent.Refresh -> retry()
             is HomeScreenEvent.ToggleFavorite -> toggleFavorite(event.breed)
             HomeScreenEvent.ToggleFilterDialog -> TODO()
@@ -89,8 +92,26 @@ class HomeViewModel @Inject constructor(
     private fun clearError() {
         _uiState.update { it.copy(error = null) }
     }
-    private fun navigateToFavorites() {
-        Log.d("TAG", "navigateToFavorites: Not Implemented Yet.v")
+    private fun showFavorites() {
+        val currentState = _uiState.value
+        val showingFavoritesOnly = !currentState.showingFavoritesOnly
+        
+        if (showingFavoritesOnly) {
+            // Filter to show only favorites
+            val favoriteBreeds = currentState.breeds.filter { it.isFavorite }
+            _uiState.update { it.copy(
+                filteredBreeds = favoriteBreeds,
+                showingFavoritesOnly = true
+            )}
+            Log.d("HomeViewModel", "Showing ${favoriteBreeds.size} favorite breeds")
+        } else {
+            // Show all breeds again
+            _uiState.update { it.copy(
+                filteredBreeds = emptyList(),
+                showingFavoritesOnly = false
+            )}
+            Log.d("HomeViewModel", "Showing all breeds")
+        }
     }
 
     private fun updateSearchQuery(query: String) {
@@ -115,7 +136,30 @@ class HomeViewModel @Inject constructor(
                 updatedList[index] = updatedBreed
             }
             
-            currentState.copy(breeds = updatedList)
+            // If we're showing favorites only, also update the filtered list
+            val updatedFilteredList = if (currentState.showingFavoritesOnly) {
+                if (updatedBreed.isFavorite) {
+                    // If item is now a favorite, add it to filtered list if not already there
+                    if (currentState.filteredBreeds.none { it.id == breed.id }) {
+                        currentState.filteredBreeds + updatedBreed
+                    } else {
+                        // Update existing item in filtered list
+                        currentState.filteredBreeds.map { 
+                            if (it.id == breed.id) updatedBreed else it 
+                        }
+                    }
+                } else {
+                    // If item is no longer a favorite, remove it from filtered list
+                    currentState.filteredBreeds.filter { it.id != breed.id }
+                }
+            } else {
+                currentState.filteredBreeds
+            }
+            
+            currentState.copy(
+                breeds = updatedList,
+                filteredBreeds = updatedFilteredList
+            )
         }
         
         viewModelScope.launch {
@@ -149,11 +193,37 @@ class HomeViewModel @Inject constructor(
             // Create a new list with the same order, just updating the target item
             val updatedList = currentState.breeds.toMutableList()
             val index = updatedList.indexOfFirst { it.id == breedId }
+            var updatedBreed: Cat? = null
+            
             if (index != -1) {
-                updatedList[index] = updatedList[index].copy(isFavorite = originalIsFavorite)
+                updatedBreed = updatedList[index].copy(isFavorite = originalIsFavorite)
+                updatedList[index] = updatedBreed
             }
             
-            currentState.copy(breeds = updatedList)
+            // If we're showing favorites only, also update the filtered list
+            val updatedFilteredList = if (currentState.showingFavoritesOnly && updatedBreed != null) {
+                if (originalIsFavorite) {
+                    // If the original state was favorite, ensure it's in the filtered list
+                    if (currentState.filteredBreeds.none { it.id == breedId }) {
+                        currentState.filteredBreeds + updatedBreed
+                    } else {
+                        // Update existing item in filtered list
+                        currentState.filteredBreeds.map { 
+                            if (it.id == breedId) updatedBreed else it 
+                        }
+                    }
+                } else {
+                    // If the original state was not favorite, remove it from filtered list
+                    currentState.filteredBreeds.filter { it.id != breedId }
+                }
+            } else {
+                currentState.filteredBreeds
+            }
+            
+            currentState.copy(
+                breeds = updatedList,
+                filteredBreeds = updatedFilteredList
+            )
         }
     }
 
@@ -290,14 +360,23 @@ class HomeViewModel @Inject constructor(
                         newData
                     }
                     
+                    // If showing favorites only, update the filtered list with only favorite items
+                    val updatedFilteredList = if (currentState.showingFavoritesOnly) {
+                        processedData.filter { it.isFavorite }
+                    } else {
+                        currentState.filteredBreeds
+                    }
+                    
                     currentState.copy(
                         breeds = processedData,
+                        filteredBreeds = updatedFilteredList,
                         isLoading = false,
                         isLoadingMore = false,
                         error = null,
                         isStale = false,
                         hasMoreData = newData.isNotEmpty(),
-                        lastUpdated = getCurrentDateTime()
+                        lastUpdated = getCurrentDateTime(),
+                        showingFavoritesOnly = currentState.showingFavoritesOnly
                     )
                 }
             }

@@ -13,5 +13,6 @@ data class HomeScreenState(
     val currentPage: Int = 0,
     val hasMoreData: Boolean = true,
     val isStale: Boolean = false,
-    val lastUpdated: String? = null
+    val lastUpdated: String? = null,
+    val showingFavoritesOnly: Boolean = false
 )

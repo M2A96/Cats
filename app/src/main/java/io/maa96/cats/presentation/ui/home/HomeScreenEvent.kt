@@ -6,7 +6,7 @@ sealed class HomeScreenEvent {
     data class OnSearchQueryChange(val query: String) : HomeScreenEvent()
     data class ToggleFavorite(val breed: Cat) : HomeScreenEvent()
     data object Refresh : HomeScreenEvent()
-    data object NavigateToFavorites : HomeScreenEvent()
+    data object ShowFavorites : HomeScreenEvent()
     data object ToggleFilterDialog : HomeScreenEvent()
     data object ToggleTheme : HomeScreenEvent()
     object LoadMoreBreeds : HomeScreenEvent()

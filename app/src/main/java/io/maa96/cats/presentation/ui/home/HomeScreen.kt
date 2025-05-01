@@ -4,7 +4,6 @@ import androidx.compose.animation.core.animateFloat
 import androidx.compose.animation.core.infiniteRepeatable
 import androidx.compose.animation.core.rememberInfiniteTransition
 import androidx.compose.animation.core.tween
-import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
@@ -33,7 +32,6 @@ import androidx.compose.material3.Surface
 import androidx.compose.material3.TopAppBarDefaults
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
-import coil3.compose.rememberAsyncImagePainter
 import io.maa96.cats.R
 import io.maa96.cats.domain.model.Cat
 import androidx.compose.foundation.layout.*
@@ -55,9 +53,6 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.tooling.preview.Preview
-import coil.request.ImageRequest
-import coil3.compose.LocalPlatformContext
-import coil3.compose.rememberConstraintsSizeResolver
 import io.maa96.cats.presentation.theme.CatsTheme
 import io.maa96.cats.presentation.ui.DynamicAsyncImage
 
@@ -74,8 +69,9 @@ fun HomeScreen(
     Scaffold(
         topBar = {
             HomeAppBar(
-                onFavoriteClick = { onEvent(HomeScreenEvent.NavigateToFavorites) },
-                onFilterClick = { onEvent(HomeScreenEvent.ToggleFilterDialog) }
+                onFavoriteClick = { onEvent(HomeScreenEvent.ShowFavorites) },
+                onFilterClick = { onEvent(HomeScreenEvent.ToggleFilterDialog) },
+                showingFavoritesOnly = state.showingFavoritesOnly
             )
         },
         floatingActionButton = {
@@ -121,14 +117,14 @@ fun HomeScreen(
                 else -> {
                     // We have data to show (either fresh or stale)
                     CatBreedList(
-                        breeds = state.breeds,
+                        breeds = if (state.showingFavoritesOnly) state.filteredBreeds else state.breeds,
                         isLoadingMore = state.isLoadingMore,
                         onBreedClick = onNavigateToDetails,
                         onFavoriteToggle = { breedId ->
                             onEvent(HomeScreenEvent.ToggleFavorite(breedId))
                         },
                         onLoadMore = {
-                            if (!state.isLoading && !state.isLoadingMore && state.hasMoreData) {
+                            if (!state.isLoading && !state.isLoadingMore && state.hasMoreData && !state.showingFavoritesOnly) {
                                 onEvent(HomeScreenEvent.LoadMoreBreeds)
                             }
                         }
@@ -154,20 +150,24 @@ fun HomeScreen(
 fun HomeAppBar(
     onFavoriteClick: () -> Unit,
     onFilterClick: () -> Unit,
-    modifier: Modifier = Modifier
+    modifier: Modifier = Modifier,
+    showingFavoritesOnly: Boolean = false
 ) {
     TopAppBar(
         title = {
             Text(
-                text = stringResource(R.string.app_title),
+                text = if (showingFavoritesOnly) stringResource(R.string.favorites) else stringResource(R.string.app_title),
                 color = MaterialTheme.colorScheme.onPrimary
             )
         },
         actions = {
             IconButton(onClick = onFavoriteClick) {
                 Icon(
-                    imageVector = Icons.Default.Favorite,
-                    contentDescription = stringResource(R.string.favorites),
+                    imageVector = if (showingFavoritesOnly) Icons.Default.List else Icons.Default.Favorite,
+                    contentDescription = if (showingFavoritesOnly) 
+                        stringResource(R.string.show_all) 
+                    else 
+                        stringResource(R.string.favorites),
                     tint = MaterialTheme.colorScheme.onPrimary
                 )
             }

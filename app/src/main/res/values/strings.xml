@@ -45,4 +45,5 @@
     <string name="refresh">Refresh</string>
     <string name="unknown_time">unknown time</string>
     <string name="last_updated">Last updated: %s</string>
+    <string name="show_all">Show All</string>
 </resources>
