@@ -7,12 +7,12 @@ import dagger.hilt.android.lifecycle.HiltViewModel
 import io.maa96.cats.domain.model.Cat
 import io.maa96.cats.domain.model.Resource
 import io.maa96.cats.domain.usecase.GetCatBreedByIdUseCase
+import javax.inject.Inject
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.catch
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
-import javax.inject.Inject
 
 @HiltViewModel
 class DetailViewModel @Inject constructor(
@@ -39,13 +39,12 @@ class DetailViewModel @Inject constructor(
         }
     }
 
-    private fun refresh(){
+    private fun refresh() {
         val currentBreedId = _uiState.value.breedId
         getCatBreedDetailById(currentBreedId)
     }
 
-    private fun openWikipediaPage(url: String){
-
+    private fun openWikipediaPage(url: String) {
     }
 
     private fun getCatBreedDetailById(breedId: String) {
@@ -53,7 +52,7 @@ class DetailViewModel @Inject constructor(
             getCatBreedByIdUseCase(breedId)
                 .catch { throwable ->
                     _uiState.update {
-                        it.copy(isLoading = false, error =throwable.message)
+                        it.copy(isLoading = false, error = throwable.message)
                     }
                 }
                 .collect { catBreed ->

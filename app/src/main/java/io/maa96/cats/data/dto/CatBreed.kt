@@ -46,7 +46,7 @@ data class CatBreed(
 fun CatBreed.toEntity() = CatBreedEntity(
     id = id,
     name = name,
-    images = image?.let { listOf( it.url) },
+    images = image?.let { listOf(it.url) },
     description = description,
     temperament = temperament,
     origin = origin,
@@ -57,5 +57,5 @@ fun CatBreed.toEntity() = CatBreedEntity(
     childFriendly = childFriendly,
     strangerFriendly = strangerFriendly,
     wikipediaUrl = wikipediaUrl,
-    isFavorite = false,
+    isFavorite = false
 )

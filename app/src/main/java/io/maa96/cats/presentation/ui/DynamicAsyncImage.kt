@@ -1,6 +1,5 @@
 package io.maa96.cats.presentation.ui
 
-
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.fillMaxSize
@@ -32,7 +31,7 @@ fun DynamicAsyncImage(
     contentDescription: String?,
     modifier: Modifier = Modifier,
     placeholder: Int = R.drawable.ic_launcher_background,
-    contentScale: ContentScale = ContentScale.Crop,
+    contentScale: ContentScale = ContentScale.Crop
 ) {
     val isLocalInspection = LocalInspectionMode.current
 
@@ -47,13 +46,13 @@ fun DynamicAsyncImage(
     } else {
         // Normal runtime behavior
         val painter = rememberAsyncImagePainter(
-            model = imageUrl,
+            model = imageUrl
         )
         var loadState by remember { mutableStateOf<AsyncImagePainter.State>(painter.state) }
 
         Box(
             modifier = modifier,
-            contentAlignment = Alignment.Center,
+            contentAlignment = Alignment.Center
         ) {
             // Track the current state
             loadState = painter.state
@@ -73,7 +72,7 @@ fun DynamicAsyncImage(
                         modifier = Modifier
                             .align(Alignment.Center)
                             .size(40.dp),
-                        color = MaterialTheme.colorScheme.tertiary,
+                        color = MaterialTheme.colorScheme.tertiary
                     )
                 }
                 is AsyncImagePainter.State.Error -> {

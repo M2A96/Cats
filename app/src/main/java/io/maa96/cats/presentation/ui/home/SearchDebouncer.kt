@@ -1,10 +1,10 @@
 package io.maa96.cats.presentation.ui.home
 
+import javax.inject.Inject
 import kotlinx.coroutines.FlowPreview
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.debounce
-import javax.inject.Inject
 
 class SearchDebouncer @Inject constructor() {
     private val queryFlow = MutableStateFlow("")

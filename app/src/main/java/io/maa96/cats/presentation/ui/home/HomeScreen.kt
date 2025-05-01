@@ -5,6 +5,7 @@ import androidx.compose.animation.core.infiniteRepeatable
 import androidx.compose.animation.core.rememberInfiniteTransition
 import androidx.compose.animation.core.tween
 import androidx.compose.foundation.background
+import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -16,29 +17,24 @@ import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.lazy.LazyColumn
-import androidx.compose.foundation.shape.CircleShape
-import androidx.compose.material3.ExperimentalMaterial3Api
-import androidx.compose.material3.IconButton
-import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.Scaffold
-import androidx.compose.material3.Text
-import androidx.compose.material3.TopAppBar
-import androidx.compose.material.icons.filled.*
-import androidx.compose.material3.Card
-import androidx.compose.material3.FloatingActionButton
-import androidx.compose.material3.Icon
-import androidx.compose.material3.OutlinedTextField
-import androidx.compose.material3.Surface
-import androidx.compose.material3.TopAppBarDefaults
-import androidx.compose.ui.res.stringResource
-import androidx.compose.ui.unit.dp
-import io.maa96.cats.R
-import io.maa96.cats.domain.model.Cat
-import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.items
+import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.*
 import androidx.compose.material3.*
+import androidx.compose.material3.Card
+import androidx.compose.material3.ExperimentalMaterial3Api
+import androidx.compose.material3.FloatingActionButton
+import androidx.compose.material3.Icon
+import androidx.compose.material3.IconButton
+import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.OutlinedTextField
+import androidx.compose.material3.Scaffold
+import androidx.compose.material3.Surface
+import androidx.compose.material3.Text
+import androidx.compose.material3.TopAppBar
+import androidx.compose.material3.TopAppBarDefaults
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.remember
@@ -49,10 +45,14 @@ import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.layout.ContentScale
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.tooling.preview.Preview
+import androidx.compose.ui.unit.dp
+import io.maa96.cats.R
+import io.maa96.cats.domain.model.Cat
 import io.maa96.cats.presentation.theme.CatsTheme
 import io.maa96.cats.presentation.ui.DynamicAsyncImage
 
@@ -124,7 +124,9 @@ fun HomeScreen(
                             onEvent(HomeScreenEvent.ToggleFavorite(breedId))
                         },
                         onLoadMore = {
-                            if (!state.isLoading && !state.isLoadingMore && state.hasMoreData && !state.showingFavoritesOnly) {
+                            if (!state.isLoading && !state.isLoadingMore && state.hasMoreData &&
+                                !state.showingFavoritesOnly
+                            ) {
                                 onEvent(HomeScreenEvent.LoadMoreBreeds)
                             }
                         }
@@ -156,7 +158,13 @@ fun HomeAppBar(
     TopAppBar(
         title = {
             Text(
-                text = if (showingFavoritesOnly) stringResource(R.string.favorites) else stringResource(R.string.app_title),
+                text = if (showingFavoritesOnly) {
+                    stringResource(
+                        R.string.favorites
+                    )
+                } else {
+                    stringResource(R.string.app_title)
+                },
                 color = MaterialTheme.colorScheme.onPrimary
             )
         },
@@ -164,10 +172,11 @@ fun HomeAppBar(
             IconButton(onClick = onFavoriteClick) {
                 Icon(
                     imageVector = if (showingFavoritesOnly) Icons.Default.List else Icons.Default.Favorite,
-                    contentDescription = if (showingFavoritesOnly) 
-                        stringResource(R.string.show_all) 
-                    else 
-                        stringResource(R.string.favorites),
+                    contentDescription = if (showingFavoritesOnly) {
+                        stringResource(R.string.show_all)
+                    } else {
+                        stringResource(R.string.favorites)
+                    },
                     tint = MaterialTheme.colorScheme.onPrimary
                 )
             }
@@ -362,10 +371,11 @@ fun CatBreedCard(
             ) {
                 Icon(
                     imageVector = if (breed.isFavorite) Icons.Default.Favorite else Icons.Default.FavoriteBorder,
-                    contentDescription = if (breed.isFavorite)
+                    contentDescription = if (breed.isFavorite) {
                         stringResource(R.string.remove_from_favorites)
-                    else
-                        stringResource(R.string.add_to_favorites),
+                    } else {
+                        stringResource(R.string.add_to_favorites)
+                    },
                     tint = if (breed.isFavorite) Color.Red else MaterialTheme.colorScheme.onSurface
                 )
             }
@@ -541,6 +551,7 @@ fun ErrorState(
         }
     }
 }
+
 /**
  * Shows a non-blocking error message as a snackbar when we have cached data
  * but the network refresh failed
@@ -636,11 +647,12 @@ fun StaleBanner(
         }
     }
 }
+
 // Preview functions
 @Preview(showBackground = true)
 @Composable
 fun HomeAppBarPreview() {
-    CatsTheme  {
+    CatsTheme {
         HomeAppBar(
             onFavoriteClick = {},
             onFilterClick = {}
@@ -708,7 +720,7 @@ fun HomeScreenPreview() {
                         childFriendly = 3,
                         strangerFriendly = 3,
                         wikipediaUrl = "https://en.wikipedia.org/wiki/Bengal_cat",
-                        isFavorite = true,
+                        isFavorite = true
                     ),
                     Cat(
                         id = "siam",

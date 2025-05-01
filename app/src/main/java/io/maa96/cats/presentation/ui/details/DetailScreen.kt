@@ -155,10 +155,11 @@ fun DetailContent(
             ) {
                 Icon(
                     imageVector = if (catDetail.isFavorite) Icons.Default.Favorite else Icons.Default.FavoriteBorder,
-                    contentDescription = if (catDetail.isFavorite)
+                    contentDescription = if (catDetail.isFavorite) {
                         stringResource(R.string.remove_from_favorites)
-                    else
-                        stringResource(R.string.add_to_favorites),
+                    } else {
+                        stringResource(R.string.add_to_favorites)
+                    },
                     tint = if (catDetail.isFavorite) Color.Red else Color.White
                 )
             }
@@ -211,9 +212,13 @@ fun DetailContent(
             SectionTitle(title = stringResource(R.string.characteristics))
             CharacteristicItem(
                 label = stringResource(R.string.hypoallergenic),
-                value = if (catDetail.hypoallergenic == 0) stringResource(R.string.yes) else stringResource(
-                    R.string.no
-                )
+                value = if (catDetail.hypoallergenic == 0) {
+                    stringResource(R.string.yes)
+                } else {
+                    stringResource(
+                        R.string.no
+                    )
+                }
             )
             CharacteristicItem(
                 label = stringResource(R.string.affection_level),
@@ -571,15 +576,13 @@ fun ErrorState(
 
 // Helper function to convert level numbers to text descriptions
 @Composable
-fun getLevelText(level: Int): String {
-    return when (level) {
-        1 -> stringResource(R.string.very_low)
-        2 -> stringResource(R.string.low)
-        3 -> stringResource(R.string.medium)
-        4 -> stringResource(R.string.high)
-        5 -> stringResource(R.string.very_high)
-        else -> stringResource(R.string.unknown)
-    }
+fun getLevelText(level: Int): String = when (level) {
+    1 -> stringResource(R.string.very_low)
+    2 -> stringResource(R.string.low)
+    3 -> stringResource(R.string.medium)
+    4 -> stringResource(R.string.high)
+    5 -> stringResource(R.string.very_high)
+    else -> stringResource(R.string.unknown)
 }
 
 // Preview functions

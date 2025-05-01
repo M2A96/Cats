@@ -5,7 +5,6 @@ import dagger.Module
 import dagger.hilt.InstallIn
 import dagger.hilt.components.SingletonComponent
 import io.maa96.cats.data.repository.CatBreedsRepositoryImpl
-import io.maa96.cats.data.source.remote.api.CatApi
 import io.maa96.cats.domain.repository.CatBreedsRepository
 import javax.inject.Singleton
 
@@ -18,5 +17,4 @@ abstract class RepositoryModule {
     abstract fun bindCatRepository(
         catBreedsRepositoryImpl: CatBreedsRepositoryImpl
     ): CatBreedsRepository
-
 }

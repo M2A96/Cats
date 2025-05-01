@@ -10,15 +10,15 @@ import io.maa96.cats.domain.model.Cat
 import io.maa96.cats.domain.model.Resource
 import io.maa96.cats.domain.model.toEntity
 import io.maa96.cats.domain.repository.CatBreedsRepository
+import javax.inject.Inject
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.flow
 import kotlinx.coroutines.flow.map
-import javax.inject.Inject
 
 class CatBreedsRepositoryImpl @Inject constructor(
     private val api: CatApi,
     private val dao: BreedDao,
-    private val db: CatsDatabase,
+    private val db: CatsDatabase
 ) : CatBreedsRepository() {
     override suspend fun getCatBreeds(limit: Int, page: Int): Flow<Resource<List<Cat>>> =
         networkBoundResource(
@@ -76,7 +76,6 @@ class CatBreedsRepositoryImpl @Inject constructor(
             emit(Resource.Loading())
             dao.insertBreed(breed.toEntity())
             emit(Resource.Success(true))
-
         } catch (e: Exception) {
             emit(Resource.Error(e.message ?: "An error occurred", false))
         }

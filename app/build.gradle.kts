@@ -5,6 +5,37 @@ plugins {
     id("com.google.dagger.hilt.android")
     kotlin("kapt")
     id("com.google.devtools.ksp")
+    id("org.jlleitschuh.gradle.ktlint")
+}
+
+// Configure ktlint
+ktlint {
+    android.set(true)
+    outputToConsole.set(true)
+    outputColorName.set("RED")
+    // Allow build to continue even with style violations during development
+    ignoreFailures.set(true)
+    // Enable experimental rules for advanced style checking
+    enableExperimentalRules.set(true)
+    // Disable some rules that might conflict with Android Studio's default formatting
+    disabledRules.set(
+        setOf(
+            "final-newline",
+            "no-wildcard-imports",
+            "max-line-length",
+            "filename"
+        )
+    )
+    filter {
+        exclude("**/generated/**")
+        include("**/kotlin/**")
+    }
+}
+
+// Add ktlint format task to run before build
+// This ensures code is automatically formatted before compilation
+tasks.named("preBuild") {
+    dependsOn("ktlintFormat")
 }
 
 android {
@@ -62,7 +93,7 @@ dependencies {
     debugImplementation(libs.androidx.ui.test.manifest)
 
     // retrofit
-    implementation (libs.retrofit)
+    implementation(libs.retrofit)
     implementation(libs.gson)
     implementation(libs.stetho)
     implementation(libs.stetho.okhttp3)
@@ -85,5 +116,4 @@ dependencies {
     implementation(libs.coil.kt.compose)
 
     implementation(libs.androidx.navigation.compose)
-
 }

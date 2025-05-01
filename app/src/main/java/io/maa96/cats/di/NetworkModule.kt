@@ -14,6 +14,8 @@ import dagger.hilt.components.SingletonComponent
 import io.maa96.cats.BuildConfig
 import io.maa96.cats.data.source.remote.api.CatApi
 import io.maa96.cats.util.SecretFields
+import java.util.Date
+import javax.inject.Singleton
 import okhttp3.Authenticator
 import okhttp3.Headers
 import okhttp3.Interceptor
@@ -21,8 +23,6 @@ import okhttp3.OkHttpClient
 import okhttp3.logging.HttpLoggingInterceptor
 import retrofit2.Retrofit
 import retrofit2.converter.gson.GsonConverterFactory
-import java.util.Date
-import javax.inject.Singleton
 
 /**
  * The main [Module] for providing network-related classes
@@ -110,7 +110,6 @@ object NetworkModule {
             }
         )
 
-
         return builder.build()
     }
 
@@ -124,18 +123,14 @@ object NetworkModule {
      */
     @Singleton
     @Provides
-    fun provideRetrofit(okHttpClient: OkHttpClient, gson: Gson): Retrofit {
-        return Retrofit.Builder().client(okHttpClient)
-            // create gson converter factory
-            .addConverterFactory(GsonConverterFactory.create(gson))
-            // get base url from SecretFields interface
-            .baseUrl(SecretFields().getBaseUrl())
-            .build()
-    }
+    fun provideRetrofit(okHttpClient: OkHttpClient, gson: Gson): Retrofit = Retrofit.Builder().client(okHttpClient)
+        // create gson converter factory
+        .addConverterFactory(GsonConverterFactory.create(gson))
+        // get base url from SecretFields interface
+        .baseUrl(SecretFields().getBaseUrl())
+        .build()
 
     @Provides
     @Singleton
-    fun provideConcreteStarWarsApi(retrofit: Retrofit): CatApi {
-        return retrofit.create(CatApi::class.java)
-    }
+    fun provideConcreteStarWarsApi(retrofit: Retrofit): CatApi = retrofit.create(CatApi::class.java)
 }

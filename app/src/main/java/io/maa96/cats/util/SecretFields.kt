@@ -10,11 +10,9 @@ class SecretFields @Inject constructor() {
 
     //    todo remember to use BuildConfig.DEBUG
     private val isDebug: Boolean = true
-    fun getBaseUrl(): String {
-        return if (isDebug) {
-            debugBaseUrl
-        } else {
-            releaseBaseUrl
-        }
+    fun getBaseUrl(): String = if (isDebug) {
+        debugBaseUrl
+    } else {
+        releaseBaseUrl
     }
 }
