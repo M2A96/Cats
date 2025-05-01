@@ -8,6 +8,7 @@ import io.maa96.cats.domain.model.Cat
 import io.maa96.cats.domain.model.Resource
 import io.maa96.cats.domain.usecase.GetBreedImagesUseCase
 import io.maa96.cats.domain.usecase.GetCatBreedByIdUseCase
+import io.maa96.cats.domain.usecase.UpdateFavoriteStatusUseCase
 import javax.inject.Inject
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.asStateFlow
@@ -19,6 +20,7 @@ import kotlinx.coroutines.launch
 class DetailViewModel @Inject constructor(
     private val getCatBreedByIdUseCase: GetCatBreedByIdUseCase,
     private val getBreedImagesUseCase: GetBreedImagesUseCase,
+    private val updateFavoriteStatusUseCase: UpdateFavoriteStatusUseCase,
     savedStateHandle: SavedStateHandle
 ) : ViewModel() {
 
@@ -38,11 +40,26 @@ class DetailViewModel @Inject constructor(
         when (event) {
             is DetailScreenEvent.Refresh -> refresh()
             is DetailScreenEvent.SelectImage -> updateSelectedImage(event.index)
-            DetailScreenEvent.ToggleFavorite -> TODO()
+            is DetailScreenEvent.ToggleFavorite -> toggleFavorite(event.breed)
             is DetailScreenEvent.OnGetDetailResult -> {
                 getCatBreedDetailById(event.breedId)
                 getBreedImages(event.breedId)
             }
+        }
+    }
+
+    private fun toggleFavorite(breed: Cat) {
+        viewModelScope.launch {
+            updateFavoriteStatusUseCase(breed.id, !breed.isFavorite)
+                .catch {
+                }
+                .collect {
+                    _uiState.update { currentState ->
+                        currentState.copy(
+                            catDetail = currentState.catDetail?.copy(isFavorite = !breed.isFavorite)
+                        )
+                    }
+                }
         }
     }
 

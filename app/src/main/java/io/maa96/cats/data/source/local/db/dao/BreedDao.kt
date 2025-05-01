@@ -20,7 +20,7 @@ interface BreedDao {
     suspend fun updateFavStatus(breedId: String, isFav: Boolean)
 
     @Query("Select * From breed WHERE `id` == :breedId")
-    fun getBreedById(breedId: String): Flow<CatBreedEntity>
+    suspend fun getBreedById(breedId: String): CatBreedEntity
 
     @Query("Select * From breed WHERE `id` == :breedId")
     suspend fun getBreedByIdSync(breedId: String): CatBreedEntity?

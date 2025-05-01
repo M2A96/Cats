@@ -1,8 +1,8 @@
 package io.maa96.cats.data.source.local.db
 
+import android.util.Log
 import androidx.room.TypeConverter
 import com.google.gson.Gson
-import com.google.gson.reflect.TypeToken
 
 class Converters {
     @TypeConverter
@@ -12,7 +12,12 @@ class Converters {
 
     @TypeConverter
     fun toStringList(value: String?): List<String>? {
-        val type = object : TypeToken<List<String>>() {}.type
-        return Gson().fromJson(value, type)
+        if (value == null) return null
+
+        return value.removeSurrounding("[", "]")
+            .split(",")
+            .map { it.trim().removeSurrounding("\"") }.also {
+                Log.d("TypeConvertor", "toStringList: $it")
+            }
     }
 }

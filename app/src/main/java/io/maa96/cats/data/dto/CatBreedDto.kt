@@ -1,5 +1,6 @@
 package io.maa96.cats.data.dto
 
+import android.util.Log
 import io.maa96.cats.data.source.local.db.entity.CatBreedEntity
 
 data class CatBreed(
@@ -59,3 +60,9 @@ fun CatBreed.toEntity() = CatBreedEntity(
     wikipediaUrl = wikipediaUrl,
     isFavorite = false
 )
+
+fun String.ExtractUrls() = removeSurrounding("[", "]")
+    ?.split(",")
+    ?.map { it.trim().removeSurrounding("\"") }.also {
+        Log.d("CatBreedsRepositoryImpl", "toStringList: $it")
+    }

@@ -1,6 +1,7 @@
 package io.maa96.cats.data.repository
 
 import androidx.room.withTransaction
+import io.maa96.cats.data.dto.ExtractUrls
 import io.maa96.cats.data.dto.toEntity
 import io.maa96.cats.data.source.local.db.CatsDatabase
 import io.maa96.cats.data.source.local.db.dao.BreedDao
@@ -37,22 +38,15 @@ class CatBreedsRepositoryImpl @Inject constructor(
             }
         )
 
-    override suspend fun getCatBreedById(breedId: String) = networkBoundResource(
-        query = {
-            dao.getBreedById(breedId).map {
-                it.toDomain()
-            }
-        },
-        fetch = {
-            api.getCatBreedById(breedId)
-        },
-        saveFetchedResult = {
-            db.withTransaction {
-                dao.deleteBreedById(breedId)
-                dao.insertBreed(it.toEntity())
-            }
+    override suspend fun getCatBreedById(breedId: String): Flow<Resource<Cat>> = flow {
+        try {
+            emit(Resource.Loading())
+            val breed = dao.getBreedById(breedId).toDomain()
+            emit(Resource.Success(breed))
+            emit(Resource.Loading(false))
+        } catch (e: Exception) {
         }
-    )
+    }
 
     override suspend fun searchBreeds(query: String, attachImage: Int) = networkBoundResource(
         query = {
@@ -82,7 +76,9 @@ class CatBreedsRepositoryImpl @Inject constructor(
 
     override suspend fun getBreedImages(breedId: String): Flow<Resource<List<String>>> = networkBoundResource(
         query = {
-            dao.getBreedImagesById(breedId)
+            dao.getBreedImagesById(breedId).map { images ->
+                images.firstOrNull()?.ExtractUrls() ?: listOf()
+            }
         },
         fetch = {
             api.searchImages(breedIds = breedId)

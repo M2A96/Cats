@@ -86,7 +86,7 @@ fun DetailScreen(
                         catDetail = state.catDetail,
                         selectedImageIndex = state.selectedImageIndex,
                         onBackClick = onBackClick,
-                        onFavoriteClick = { onEvent(DetailScreenEvent.ToggleFavorite) },
+                        onFavoriteClick = { onEvent(DetailScreenEvent.ToggleFavorite(state.catDetail)) },
                         onImageSelect = { index -> onEvent(DetailScreenEvent.SelectImage(index)) },
                         onWikipediaClick = onNavigateToWebView
                     )
