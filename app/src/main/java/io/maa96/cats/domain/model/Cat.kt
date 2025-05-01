@@ -16,7 +16,7 @@ data class Cat(
     val childFriendly: Int, // 1-5
     val strangerFriendly: Int, // 1-5
     val wikipediaUrl: String,
-    val isFavorite: Boolean = false
+    val isFavorite: Boolean
 )
 
 fun Cat.toEntity() = CatBreedEntity(

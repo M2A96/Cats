@@ -32,7 +32,6 @@ class CatBreedsRepositoryImpl @Inject constructor(
             },
             saveFetchedResult = {
                 db.withTransaction {
-                    dao.deleteAllBreeds()
                     dao.insertBreeds(it.map { it.toEntity() })
                 }
             }
@@ -71,10 +70,10 @@ class CatBreedsRepositoryImpl @Inject constructor(
         }
     )
 
-    override suspend fun updateFavoriteStatus(breed: Cat): Flow<Resource<Boolean>> = flow {
+    override suspend fun updateFavoriteStatus(breedId: String, isFav: Boolean): Flow<Resource<Boolean>> = flow {
         try {
             emit(Resource.Loading())
-            dao.insertBreed(breed.toEntity())
+            dao.updateFavStatus(breedId, isFav)
             emit(Resource.Success(true))
         } catch (e: Exception) {
             emit(Resource.Error(e.message ?: "An error occurred", false))

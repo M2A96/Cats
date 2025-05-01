@@ -21,7 +21,7 @@ data class CatBreedEntity(
     val affectionLevel: Int,
     val childFriendly: Int,
     val strangerFriendly: Int,
-    val wikipediaUrl: String,
+    val wikipediaUrl: String?,
     val isFavorite: Boolean = false
 )
 
@@ -38,7 +38,6 @@ fun CatBreedEntity.toDomain() = Cat(
     affectionLevel = affectionLevel,
     childFriendly = childFriendly,
     strangerFriendly = strangerFriendly,
-    wikipediaUrl = wikipediaUrl,
+    wikipediaUrl = wikipediaUrl ?: "",
     isFavorite = isFavorite
-
 )

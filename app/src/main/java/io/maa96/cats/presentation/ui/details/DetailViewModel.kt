@@ -27,6 +27,9 @@ class DetailViewModel @Inject constructor(
 
     init {
         savedStateHandle.get<String>("breedId")?.let { breedId ->
+            _uiState.update {
+                it.copy(breedId = breedId)
+            }
             onEvent(DetailScreenEvent.OnGetDetailResult(breedId))
         }
     }

@@ -158,11 +158,9 @@ class HomeViewModel @Inject constructor(
                         )
                     }
                 } else {
-                    val currentBreeds = _uiState.value.breeds
-                    val updatedBreeds = currentBreeds + newBreeds
                     _uiState.update {
                         it.copy(
-                            breeds = updatedBreeds,
+                            breeds = newBreeds,
                             isLoadingMore = false,
                             currentPage = nextPage,
                             error = null,
@@ -222,25 +220,21 @@ class HomeViewModel @Inject constructor(
     }
 
     private fun toggleFavorite(breed: Cat) {
-        // Store the original favorite status to revert if needed
-        val originalIsFavorite = breed.isFavorite
-        val updatedBreed = breed.copy(isFavorite = !originalIsFavorite)
-
         // Optimistically update UI state
-        updateBreedInState(updatedBreed)
+        updateBreedInState(breed)
 
         // Persist the change
         viewModelScope.launch {
-            updateFavoriteStatusUseCase(updatedBreed)
+            updateFavoriteStatusUseCase(breed.id, breed.isFavorite.not())
                 .catch { error ->
                     Log.e(TAG, "Toggle favorite error: ${error.message}")
-                    revertFavoriteStatus(breed.id, originalIsFavorite)
+//                    revertFavoriteStatus(breed.id, originalIsFavorite)
                 }
                 .collect { result ->
                     when (result) {
                         is Resource.Error -> {
                             Log.e(TAG, "Toggle favorite failed: ${result.message}")
-                            revertFavoriteStatus(breed.id, originalIsFavorite)
+//                            revertFavoriteStatus(breed.id, originalIsFavorite)
                         }
                         is Resource.Success -> {
                             Log.d(TAG, "Toggle favorite success for breed ${breed.id}")
@@ -257,7 +251,7 @@ class HomeViewModel @Inject constructor(
             val updatedList = currentState.breeds.toMutableList()
             val index = updatedList.indexOfFirst { it.id == breed.id }
             if (index != -1) {
-                updatedList[index] = breed
+                updatedList[index] = breed.copy(isFavorite = breed.isFavorite.not())
             }
 
             // Update filtered list if needed

@@ -16,6 +16,9 @@ interface BreedDao {
     @Insert(onConflict = OnConflictStrategy.REPLACE)
     suspend fun insertBreed(breed: CatBreedEntity)
 
+    @Query("UPDATE breed SET isFavorite = :isFav WHERE id == :breedId")
+    suspend fun updateFavStatus(breedId: String, isFav: Boolean)
+
     @Query("Select * From breed WHERE `id` == :breedId")
     fun getBreedById(breedId: String): Flow<CatBreedEntity>
 
