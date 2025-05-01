@@ -80,4 +80,23 @@ class CatBreedsRepositoryImpl @Inject constructor(
             emit(Resource.Error(e.message ?: "An error occurred", false))
         }
     }
+
+    override suspend fun getBreedImages(breedId: String): Flow<Resource<List<String>>> = networkBoundResource(
+        query = {
+            dao.getBreedImagesById(breedId)
+        },
+        fetch = {
+            api.searchImages(breedIds = breedId)
+        },
+        saveFetchedResult = {
+            db.withTransaction {
+                dao.updateBreedImagesById(
+                    images = it.map {
+                        it.url
+                    },
+                    breedId = breedId
+                )
+            }
+        }
+    )
 }

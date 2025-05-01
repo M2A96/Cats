@@ -4,7 +4,6 @@ import androidx.compose.animation.core.animateFloat
 import androidx.compose.animation.core.infiniteRepeatable
 import androidx.compose.animation.core.rememberInfiniteTransition
 import androidx.compose.animation.core.tween
-import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
@@ -51,17 +50,18 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
-import coil3.compose.rememberAsyncImagePainter
 import io.maa96.cats.R
 import io.maa96.cats.domain.model.Cat
 import io.maa96.cats.presentation.theme.CatsTheme
+import io.maa96.cats.presentation.ui.DynamicAsyncImage
 
 @Composable
 fun DetailScreen(
     state: DetailScreenState,
     modifier: Modifier = Modifier,
     onEvent: (DetailScreenEvent) -> Unit,
-    onBackClick: () -> Unit
+    onBackClick: () -> Unit,
+    onNavigateToWebView: (String, String) -> Unit
 ) {
     Scaffold { paddingValues ->
         Box(
@@ -88,9 +88,7 @@ fun DetailScreen(
                         onBackClick = onBackClick,
                         onFavoriteClick = { onEvent(DetailScreenEvent.ToggleFavorite) },
                         onImageSelect = { index -> onEvent(DetailScreenEvent.SelectImage(index)) },
-                        onWikipediaClick = {
-                            onEvent(DetailScreenEvent.OpenWikipedia(it))
-                        }
+                        onWikipediaClick = onNavigateToWebView
                     )
                 }
             }
@@ -105,7 +103,7 @@ fun DetailContent(
     onBackClick: () -> Unit,
     onFavoriteClick: () -> Unit,
     onImageSelect: (Int) -> Unit,
-    onWikipediaClick: (String) -> Unit,
+    onWikipediaClick: (String, String) -> Unit,
     modifier: Modifier = Modifier
 ) {
     Column(
@@ -119,15 +117,18 @@ fun DetailContent(
                 .height(250.dp)
         ) {
             // Main Image
-            Image(
-                painter = rememberAsyncImagePainter(
-                    model = catDetail.images?.getOrNull(selectedImageIndex)
-                        ?: catDetail.images?.firstOrNull()
-                ),
-                contentDescription = "${catDetail.name} ${stringResource(R.string.cat_image)}",
-                contentScale = ContentScale.Crop,
-                modifier = Modifier.fillMaxSize()
-            )
+            (
+                catDetail.images?.getOrNull(selectedImageIndex)
+                    ?: catDetail.images?.firstOrNull()
+                )?.let {
+                DynamicAsyncImage(
+                    imageUrl = it,
+
+                    contentDescription = "${catDetail.name} ${stringResource(R.string.cat_image)}",
+                    contentScale = ContentScale.Crop,
+                    modifier = Modifier.fillMaxSize()
+                )
+            }
 
             // Back Button
             IconButton(
@@ -237,7 +238,7 @@ fun DetailContent(
 
             // Wikipedia Button
             Button(
-                onClick = { onWikipediaClick(catDetail.wikipediaUrl) },
+                onClick = { onWikipediaClick(catDetail.wikipediaUrl, catDetail.name) },
                 modifier = Modifier.fillMaxWidth(),
                 shape = RoundedCornerShape(24.dp),
                 colors = ButtonDefaults.buttonColors(
@@ -286,11 +287,11 @@ fun ImageCarousel(
                     )
                     .clickable { onImageSelect(index) }
             ) {
-                Image(
-                    painter = rememberAsyncImagePainter(model = imageUrl),
-                    contentDescription = null,
-                    contentScale = ContentScale.Crop,
-                    modifier = Modifier.fillMaxSize()
+                DynamicAsyncImage(
+                    imageUrl = imageUrl,
+                    contentDescription = "Cat Image",
+                    modifier = modifier,
+                    contentScale = ContentScale.Crop
                 )
             }
         }
@@ -610,7 +611,8 @@ fun DetailScreenPreview() {
                 )
             ),
             onEvent = {},
-            onBackClick = {}
+            onBackClick = {},
+            onNavigateToWebView = { _, _ -> }
         )
     }
 }

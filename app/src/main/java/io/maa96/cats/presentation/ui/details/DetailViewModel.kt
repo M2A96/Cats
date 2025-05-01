@@ -6,6 +6,7 @@ import androidx.lifecycle.viewModelScope
 import dagger.hilt.android.lifecycle.HiltViewModel
 import io.maa96.cats.domain.model.Cat
 import io.maa96.cats.domain.model.Resource
+import io.maa96.cats.domain.usecase.GetBreedImagesUseCase
 import io.maa96.cats.domain.usecase.GetCatBreedByIdUseCase
 import javax.inject.Inject
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -17,6 +18,7 @@ import kotlinx.coroutines.launch
 @HiltViewModel
 class DetailViewModel @Inject constructor(
     private val getCatBreedByIdUseCase: GetCatBreedByIdUseCase,
+    private val getBreedImagesUseCase: GetBreedImagesUseCase,
     savedStateHandle: SavedStateHandle
 ) : ViewModel() {
 
@@ -32,10 +34,21 @@ class DetailViewModel @Inject constructor(
     fun onEvent(event: DetailScreenEvent) {
         when (event) {
             is DetailScreenEvent.Refresh -> refresh()
-            is DetailScreenEvent.SelectImage -> TODO()
+            is DetailScreenEvent.SelectImage -> updateSelectedImage(event.index)
             DetailScreenEvent.ToggleFavorite -> TODO()
-            is DetailScreenEvent.OnGetDetailResult -> getCatBreedDetailById(event.breedId)
+            is DetailScreenEvent.OnGetDetailResult -> {
+                getCatBreedDetailById(event.breedId)
+                getBreedImages(event.breedId)
+            }
             is DetailScreenEvent.OpenWikipedia -> openWikipediaPage(event.wikipediaUrl)
+        }
+    }
+
+    private fun updateSelectedImage(index: Int) {
+        _uiState.update {
+            it.copy(
+                selectedImageIndex = index
+            )
         }
     }
 
@@ -45,6 +58,15 @@ class DetailViewModel @Inject constructor(
     }
 
     private fun openWikipediaPage(url: String) {
+        // Navigate to WebView screen with the Wikipedia URL
+        _uiState.update { currentState ->
+            currentState.copy(
+                navigationEvent = NavigationEvent.NavigateToWebView(
+                    url = url,
+                    title = currentState.catDetail?.name ?: "Wikipedia"
+                )
+            )
+        }
     }
 
     private fun getCatBreedDetailById(breedId: String) {
@@ -58,6 +80,43 @@ class DetailViewModel @Inject constructor(
                 .collect { catBreed ->
                     updateUiState(catBreed)
                 }
+        }
+    }
+
+    private fun getBreedImages(breedId: String) {
+        viewModelScope.launch {
+            getBreedImagesUseCase(breedId)
+                .catch { throwable ->
+                    _uiState.update {
+                        it.copy(isLoading = false, error = throwable.message)
+                    }
+                }
+                .collect { catBreed ->
+                    updateCatImages(catBreed)
+                }
+        }
+    }
+
+    private fun updateCatImages(catBreed: Resource<List<String>>) {
+        when (catBreed) {
+            is Resource.Error -> {
+                _uiState.update {
+                    it.copy(isLoading = false, error = catBreed.message)
+                }
+            }
+            is Resource.Loading -> {
+                _uiState.update {
+                    it.copy(isLoading = true)
+                }
+            }
+            is Resource.Success -> {
+                _uiState.update { currentState ->
+                    currentState.copy(
+                        isLoading = false,
+                        catDetail = currentState.catDetail?.copy(images = catBreed.data)
+                    )
+                }
+            }
         }
     }
 

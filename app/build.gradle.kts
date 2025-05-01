@@ -20,10 +20,7 @@ ktlint {
     // Disable some rules that might conflict with Android Studio's default formatting
     disabledRules.set(
         setOf(
-            "final-newline",
-            "no-wildcard-imports",
-            "max-line-length",
-            "filename"
+            "no-wildcard-imports"
         )
     )
     filter {

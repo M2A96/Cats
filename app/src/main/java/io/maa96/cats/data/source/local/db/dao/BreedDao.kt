@@ -25,6 +25,12 @@ interface BreedDao {
     @Query("SELECT * FROM breed WHERE name LIKE '%' || :search || '%'")
     fun searchByName(search: String): Flow<List<CatBreedEntity>>
 
+    @Query("UPDATE breed SET images = :images WHERE id == :breedId")
+    suspend fun updateBreedImagesById(breedId: String, images: List<String>)
+
+    @Query("SELECT images FROM breed WHERE id == :breedId")
+    fun getBreedImagesById(breedId: String): Flow<List<String>>
+
     @Query("SELECT * FROM breed")
     fun getBreeds(): Flow<List<CatBreedEntity>>
 

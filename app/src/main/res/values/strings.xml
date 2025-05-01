@@ -46,4 +46,5 @@
     <string name="unknown_time">unknown time</string>
     <string name="last_updated">Last updated: %s</string>
     <string name="show_all">Show All</string>
+    <string name="error_loading_page">Error loading page. Please try again.</string>
 </resources>

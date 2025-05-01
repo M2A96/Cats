@@ -3,7 +3,7 @@ package io.maa96.cats.data.dto
 import io.maa96.cats.data.source.local.db.entity.CatBreedEntity
 
 data class CatBreed(
-    val weight: Weight,
+    val weight: WeightDto,
     val id: String,
     val name: String,
     val cfaUrl: String,
@@ -40,7 +40,7 @@ data class CatBreed(
     val wikipediaUrl: String,
     val hypoallergenic: Int,
     val referenceImageId: String,
-    val image: Image?
+    val image: ImageDto?
 )
 
 fun CatBreed.toEntity() = CatBreedEntity(
