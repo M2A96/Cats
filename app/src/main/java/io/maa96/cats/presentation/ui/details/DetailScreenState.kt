@@ -7,10 +7,5 @@ data class DetailScreenState(
     val catDetail: Cat? = null,
     val error: String? = null,
     val selectedImageIndex: Int = 0,
-    val breedId: String = "",
-    val navigationEvent: NavigationEvent? = null
+    val breedId: String = ""
 )
-
-sealed class NavigationEvent {
-    data class NavigateToWebView(val url: String, val title: String) : NavigationEvent()
-}

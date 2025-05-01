@@ -40,7 +40,6 @@ class DetailViewModel @Inject constructor(
                 getCatBreedDetailById(event.breedId)
                 getBreedImages(event.breedId)
             }
-            is DetailScreenEvent.OpenWikipedia -> openWikipediaPage(event.wikipediaUrl)
         }
     }
 
@@ -55,18 +54,6 @@ class DetailViewModel @Inject constructor(
     private fun refresh() {
         val currentBreedId = _uiState.value.breedId
         getCatBreedDetailById(currentBreedId)
-    }
-
-    private fun openWikipediaPage(url: String) {
-        // Navigate to WebView screen with the Wikipedia URL
-        _uiState.update { currentState ->
-            currentState.copy(
-                navigationEvent = NavigationEvent.NavigateToWebView(
-                    url = url,
-                    title = currentState.catDetail?.name ?: "Wikipedia"
-                )
-            )
-        }
     }
 
     private fun getCatBreedDetailById(breedId: String) {
