@@ -53,7 +53,6 @@ class HomeViewModel @Inject constructor(
             HomeScreenEvent.ShowFavorites -> toggleFavoritesFilter()
             HomeScreenEvent.Refresh -> refreshData()
             is HomeScreenEvent.ToggleFavorite -> toggleFavorite(event.breed)
-            HomeScreenEvent.ToggleFilterDialog -> TODO()
             HomeScreenEvent.ToggleTheme -> TODO()
             HomeScreenEvent.LoadMoreBreeds -> loadMoreBreeds()
             HomeScreenEvent.ClearError -> clearError()
@@ -91,8 +90,37 @@ class HomeViewModel @Inject constructor(
                 _uiState.update { it.copy(isLoading = false) }
             }
             .collect { result ->
-                updateUiState(result, isInitialLoad = true)
+                handleSearchResult(result)
             }
+    }
+
+    private fun handleSearchResult(result: Resource<List<Cat>>) {
+        when (result) {
+            is Resource.Error -> {
+                _uiState.update {
+                    it.copy(
+                        isLoading = false,
+                        breeds = emptyList(),
+                        error = "Breed Not Found"
+                    )
+                }
+            }
+            is Resource.Loading -> {
+                _uiState.update {
+                    it.copy(
+                        isLoading = true
+                    )
+                }
+            }
+            is Resource.Success -> {
+                _uiState.update {
+                    it.copy(
+                        breeds = result.data ?: emptyList(),
+                        isLoading = false
+                    )
+                }
+            }
+        }
     }
 
     private fun clearSearchResults() {
@@ -341,7 +369,8 @@ class HomeViewModel @Inject constructor(
                 currentState.copy(
                     isLoading = false,
                     isLoadingMore = false,
-                    error = result.message
+                    error = result.message,
+                    breeds = emptyList()
                 )
             }
         }

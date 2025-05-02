@@ -55,8 +55,8 @@ import io.maa96.cats.R
 import io.maa96.cats.domain.model.Cat
 import io.maa96.cats.presentation.theme.CatsTheme
 import io.maa96.cats.presentation.ui.DynamicAsyncImage
+import io.maa96.cats.presentation.ui.common.ErrorManager
 
-// Updated HomeScreen to include both error handling mechanisms
 @Composable
 fun HomeScreen(
     state: HomeScreenState,
@@ -70,7 +70,6 @@ fun HomeScreen(
         topBar = {
             HomeAppBar(
                 onFavoriteClick = { onEvent(HomeScreenEvent.ShowFavorites) },
-                onFilterClick = { onEvent(HomeScreenEvent.ToggleFilterDialog) },
                 showingFavoritesOnly = state.showingFavoritesOnly
             )
         },
@@ -92,30 +91,20 @@ fun HomeScreen(
                 onQueryChange = { onEvent(HomeScreenEvent.OnSearchQueryChange(it)) }
             )
 
-            // Show stale data banner if we have stale data and a network error
-            if (state.isStale && state.error != null && !state.isLoading) {
-                StaleBanner(
-                    lastUpdated = state.lastUpdated ?: stringResource(R.string.unknown_time),
-                    onRefresh = { onEvent(HomeScreenEvent.Refresh) }
-                )
-            }
-
             when {
                 state.isLoading -> {
                     ShimmerCatBreedList()
                 }
                 state.error != null && state.breeds.isEmpty() -> {
-                    // Complete error state - no cached data available
                     ErrorState(
                         message = state.error,
                         onRetry = { onEvent(HomeScreenEvent.Refresh) }
                     )
                 }
-                state.filteredBreeds.isEmpty() && state.searchQuery.isNotBlank() -> {
+                state.breeds.isEmpty() && state.searchQuery.isNotBlank() -> {
                     EmptySearchResult(query = state.searchQuery)
                 }
                 else -> {
-                    // We have data to show (either fresh or stale)
                     CatBreedList(
                         breeds = if (state.showingFavoritesOnly) state.filteredBreeds else state.breeds,
                         isLoadingMore = state.isLoadingMore,
@@ -132,7 +121,6 @@ fun HomeScreen(
                         }
                     )
 
-                    // Show network error snackbar if we have an error but also have cached data
                     if (state.error != null && !state.isLoading) {
                         NetworkErrorSnackbar(
                             errorMessage = state.error,
@@ -151,7 +139,6 @@ fun HomeScreen(
 @Composable
 fun HomeAppBar(
     onFavoriteClick: () -> Unit,
-    onFilterClick: () -> Unit,
     modifier: Modifier = Modifier,
     showingFavoritesOnly: Boolean = false
 ) {
@@ -163,7 +150,7 @@ fun HomeAppBar(
                         R.string.favorites
                     )
                 } else {
-                    stringResource(R.string.app_title)
+                    stringResource(R.string.title)
                 },
                 color = MaterialTheme.colorScheme.onPrimary
             )
@@ -177,13 +164,6 @@ fun HomeAppBar(
                     } else {
                         stringResource(R.string.favorites)
                     },
-                    tint = MaterialTheme.colorScheme.onPrimary
-                )
-            }
-            IconButton(onClick = onFilterClick) {
-                Icon(
-                    imageVector = Icons.Default.Notifications,
-                    contentDescription = stringResource(R.string.filter_options),
                     tint = MaterialTheme.colorScheme.onPrimary
                 )
             }
@@ -552,10 +532,6 @@ fun ErrorState(
     }
 }
 
-/**
- * Shows a non-blocking error message as a snackbar when we have cached data
- * but the network refresh failed
- */
 @Composable
 fun NetworkErrorSnackbar(
     errorMessage: String?,
@@ -563,35 +539,12 @@ fun NetworkErrorSnackbar(
     onRetry: () -> Unit,
     snackbarHostState: SnackbarHostState
 ) {
-    // Extract all string resources in the composable context
-    val timeoutMessage = stringResource(R.string.error_timeout)
-    val noInternetMessage = stringResource(R.string.error_no_internet)
-    val serverErrorMessage = stringResource(R.string.error_server)
-    val genericErrorMessage = stringResource(R.string.error_refresh_generic)
-    val retryLabel = stringResource(R.string.retry)
-
-    errorMessage?.let {
-        // Format the error message to be user-friendly
-        val userFriendlyMessage = when {
-            it.contains("timeout", ignoreCase = true) -> timeoutMessage
-            it.contains("host", ignoreCase = true) || it.contains("internet", ignoreCase = true) -> noInternetMessage
-            it.contains("server", ignoreCase = true) || it.contains("500", ignoreCase = true) -> serverErrorMessage
-            else -> genericErrorMessage
-        }
-
-        LaunchedEffect(errorMessage) {
-            val result = snackbarHostState.showSnackbar(
-                message = userFriendlyMessage,
-                actionLabel = retryLabel,
-                duration = SnackbarDuration.Long
-            )
-
-            when (result) {
-                SnackbarResult.ActionPerformed -> onRetry()
-                SnackbarResult.Dismissed -> onDismiss()
-            }
-        }
-    }
+    ErrorManager.ShowErrorSnackbar(
+        errorMessage = errorMessage,
+        onDismiss = onDismiss,
+        onRetry = onRetry,
+        snackbarHostState = snackbarHostState
+    )
 }
 
 /**
@@ -654,8 +607,7 @@ fun StaleBanner(
 fun HomeAppBarPreview() {
     CatsTheme {
         HomeAppBar(
-            onFavoriteClick = {},
-            onFilterClick = {}
+            onFavoriteClick = {}
         )
     }
 }
