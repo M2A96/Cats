@@ -18,7 +18,6 @@ import androidx.compose.material3.*
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.remember
-import androidx.compose.runtime.snapshotFlow
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
@@ -30,9 +29,11 @@ import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextOverflow
+import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import io.maa96.cats.R
 import io.maa96.cats.domain.model.Cat
+import io.maa96.cats.presentation.theme.CatsTheme
 import io.maa96.cats.presentation.ui.DynamicAsyncImage
 
 @Composable
@@ -76,15 +77,7 @@ fun HomeScreen(
                 state.isLoading -> {
                     ShimmerCatBreedList()
                 }
-                state.isLoadingSearch -> {
-                    Box(
-                        modifier = Modifier.fillMaxSize(),
-                        contentAlignment = Alignment.Center
-                    ) {
-                        CircularProgressIndicator()
-                    }
-                }
-                state.error != null && state.breeds.isEmpty() && state.filteredBreeds.isEmpty() -> {
+                state.error != null && state.breeds.isEmpty() -> {
                     ErrorState(
                         message = state.error,
                         onRetry = { onEvent(HomeScreenEvent.Refresh) }
@@ -95,29 +88,22 @@ fun HomeScreen(
                 }
                 else -> {
                     CatBreedList(
-                        breeds = if (state.searchQuery.isNotBlank()) state.filteredBreeds else if (state.showingFavoritesOnly) state.filteredBreeds else state.breeds,
+                        breeds = if (state.showingFavoritesOnly) state.filteredBreeds else state.breeds,
                         isLoadingMore = state.isLoadingMore,
-                        searchQuery = state.searchQuery,
                         onBreedClick = onNavigateToDetails,
                         onFavoriteToggle = { breedId, isFav ->
                             onEvent(HomeScreenEvent.ToggleFavorite(breedId, isFav))
                         },
                         onLoadMore = {
-                            if (!state.isLoading && !state.isLoadingMore && !state.showingFavoritesOnly &&
-                                state.searchQuery.isBlank()
+                            if (!state.isLoading && !state.isLoadingMore && state.hasMoreData &&
+                                !state.showingFavoritesOnly
                             ) {
-                                Log.d("HomeScreen", "Triggering LoadMoreBreeds")
                                 onEvent(HomeScreenEvent.LoadMoreBreeds)
-                            } else {
-                                Log.d(
-                                    "HomeScreen",
-                                    "Skipped LoadMoreBreeds: isLoading=${state.isLoading}, isLoadingMore=${state.isLoadingMore}, showingFavoritesOnly=${state.showingFavoritesOnly}, searchQuery=${state.searchQuery}"
-                                )
                             }
                         }
                     )
 
-                    if (state.error != null && !state.isLoading && !state.isLoadingSearch) {
+                    if (state.error != null && !state.isLoading) {
                         NetworkErrorSnackbar(
                             errorMessage = state.error,
                             onDismiss = { onEvent(HomeScreenEvent.ClearError) },
@@ -234,7 +220,6 @@ fun SearchBar(
 fun CatBreedList(
     breeds: List<Cat>,
     isLoadingMore: Boolean,
-    searchQuery: String,
     onBreedClick: (String) -> Unit,
     onFavoriteToggle: (String, Boolean) -> Unit,
     onLoadMore: () -> Unit,
@@ -258,6 +243,12 @@ fun CatBreedList(
                 onClick = { onBreedClick(breed.id) },
                 onFavoriteClick = { onFavoriteToggle(breed.id, breed.isFavorite.not()) }
             )
+
+            if (breed == breeds.lastOrNull()) {
+                LaunchedEffect(key1 = true) {
+                    onLoadMore()
+                }
+            }
         }
         if (isLoadingMore) {
             item {
@@ -272,17 +263,17 @@ fun CatBreedList(
             }
         }
     }
-    LaunchedEffect(lazyListState, searchQuery) {
-        snapshotFlow { lazyListState.layoutInfo }.collect { layoutInfo ->
-            val lastVisibleItem = layoutInfo.visibleItemsInfo.lastOrNull()
-            if (lastVisibleItem != null && lastVisibleItem.index >= breeds.size - 2 &&
-                !isLoadingMore && breeds.isNotEmpty() && searchQuery.isBlank()
-            ) {
-                Log.d("CatBreedList", "Triggering onLoadMore")
-                onLoadMore()
-            }
-        }
-    }
+//    LaunchedEffect(lazyListState, searchQuery) {
+//        snapshotFlow { lazyListState.layoutInfo }.collect { layoutInfo ->
+//            val lastVisibleItem = layoutInfo.visibleItemsInfo.lastOrNull()
+//            if (lastVisibleItem != null && lastVisibleItem.index >= breeds.size - 2 &&
+//                !isLoadingMore && breeds.isNotEmpty() && searchQuery.isBlank()
+//            ) {
+//                Log.d("CatBreedList", "Triggering onLoadMore")
+//                onLoadMore()
+//            }
+//        }
+//    }
 }
 
 @Composable
@@ -601,5 +592,129 @@ fun StaleBanner(
                 )
             }
         }
+    }
+}
+
+// Preview functions
+@Preview(showBackground = true)
+@Composable
+fun HomeAppBarPreview() {
+    CatsTheme {
+        HomeAppBar(
+            onFavoriteClick = {}
+        )
+    }
+}
+
+@Preview(showBackground = true)
+@Composable
+fun SearchBarPreview() {
+    CatsTheme {
+        SearchBar(
+            query = "Bengal",
+            onQueryChange = {}
+        )
+    }
+}
+
+@Preview(showBackground = true)
+@Composable
+fun CatBreedCardPreview() {
+    CatsTheme {
+        CatBreedCard(
+            breed = Cat(
+                id = "siam",
+                name = "Siamese",
+                images = listOf("https://cdn2.thecatapi.com/images/xnsqonbjW.jpg"),
+                temperament = "Curious, Intelligent, Social",
+                origin = "Thailand",
+                description = "Bengals are a lot of fun to live with, but they're definitely not the cat for everyone, or for first-time cat owners. Extremely intelligent, curious and active, they demand a lot of interaction and woe betide the owner who doesn't provide it.",
+                lifeSpan = "12-16 years",
+                weight = "8-15 lbs",
+                hypoallergenic = 0,
+                affectionLevel = 3,
+                childFriendly = 3,
+                strangerFriendly = 3,
+                wikipediaUrl = "https://en.wikipedia.org/wiki/Bengal_cat",
+                isFavorite = true
+            ),
+            onClick = {},
+            onFavoriteClick = {}
+        )
+    }
+}
+
+@Preview(showBackground = true, widthDp = 360, heightDp = 640)
+@Composable
+fun HomeScreenPreview() {
+    CatsTheme {
+        HomeScreen(
+            state = HomeScreenState(
+                searchQuery = "Bengal",
+                filteredBreeds = listOf(
+                    Cat(
+                        id = "beng",
+                        name = "Bengal",
+                        images = listOf("https://cdn2.thecatapi.com/images/xnsqonbjW.jpg"),
+                        temperament = "Alert, Agile, Energetic",
+                        description = "Bengals are a lot of fun to live with, but they're definitely not the cat for everyone, or for first-time cat owners. Extremely intelligent, curious and active, they demand a lot of interaction and woe betide the owner who doesn't provide it.",
+                        origin = "United States",
+                        lifeSpan = "12-16 years",
+                        weight = "8-15 lbs",
+                        hypoallergenic = 0,
+                        affectionLevel = 3,
+                        childFriendly = 3,
+                        strangerFriendly = 3,
+                        wikipediaUrl = "https://en.wikipedia.org/wiki/Bengal_cat",
+                        isFavorite = true
+                    ),
+                    Cat(
+                        id = "siam",
+                        name = "Siamese",
+                        images = listOf("https://cdn2.thecatapi.com/images/xnsqonbjW.jpg"),
+                        temperament = "Curious, Intelligent, Social",
+                        origin = "Thailand",
+                        description = "Bengals are a lot of fun to live with, but they're definitely not the cat for everyone, or for first-time cat owners. Extremely intelligent, curious and active, they demand a lot of interaction and woe betide the owner who doesn't provide it.",
+                        lifeSpan = "12-16 years",
+                        weight = "8-15 lbs",
+                        hypoallergenic = 0,
+                        affectionLevel = 3,
+                        childFriendly = 3,
+                        strangerFriendly = 3,
+                        wikipediaUrl = "https://en.wikipedia.org/wiki/Bengal_cat",
+                        isFavorite = true
+                    )
+                )
+            ),
+            onEvent = {},
+            onNavigateToDetails = {}
+        )
+    }
+}
+
+@Preview(showBackground = true)
+@Composable
+fun EmptySearchResultPreview() {
+    CatsTheme {
+        EmptySearchResult(query = "xyz")
+    }
+}
+
+@Preview(showBackground = true)
+@Composable
+fun ErrorStatePreview() {
+    CatsTheme {
+        ErrorState(
+            message = "Failed to load cat breeds. Please check your internet connection.",
+            onRetry = {}
+        )
+    }
+}
+
+@Preview(showBackground = true)
+@Composable
+fun ShimmerCatBreedListPreview() {
+    CatsTheme {
+        ShimmerCatBreedList()
     }
 }
