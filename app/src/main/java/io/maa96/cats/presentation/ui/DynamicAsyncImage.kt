@@ -30,7 +30,7 @@ fun DynamicAsyncImage(
     imageUrl: String,
     contentDescription: String?,
     modifier: Modifier = Modifier,
-    placeholder: Int = R.drawable.ic_launcher_background,
+    placeholder: Int = R.drawable.ic_place_holder,
     contentScale: ContentScale = ContentScale.Crop
 ) {
     val isLocalInspection = LocalInspectionMode.current
