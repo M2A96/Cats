@@ -34,6 +34,8 @@
     <string name="high">High</string>
     <string name="very_high">Very High</string>
     <string name="unknown">Unknown</string>
+    <string name="additional_images_error">ailed to load additional images</string>
+    <string name="retry_images">retry get images</string>
 
     <string name="error_timeout">Showing saved data. Couldn\'t refresh: connection timed out.</string>
     <string name="error_no_internet">Showing saved data. Couldn\'t refresh: no internet connection.</string>

@@ -1,5 +1,6 @@
 package io.maa96.cats.presentation.ui
 
+import android.util.Log
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.fillMaxSize
@@ -46,7 +47,10 @@ fun DynamicAsyncImage(
     } else {
         // Normal runtime behavior
         val painter = rememberAsyncImagePainter(
-            model = imageUrl
+            model = imageUrl,
+            onError = { error ->
+                Log.d("DynamicAsyncImage", "DynamicAsyncImage: $error ,$imageUrl")
+            }
         )
         var loadState by remember { mutableStateOf<AsyncImagePainter.State>(painter.state) }
 
@@ -75,6 +79,7 @@ fun DynamicAsyncImage(
                         color = MaterialTheme.colorScheme.tertiary
                     )
                 }
+
                 is AsyncImagePainter.State.Error -> {
                     // Show error placeholder
                     Image(
@@ -84,9 +89,11 @@ fun DynamicAsyncImage(
                         contentScale = contentScale
                     )
                 }
+
                 is AsyncImagePainter.State.Success -> {
                     // Success case - already showing the image
                 }
+
                 else -> {
                     // Handle any other state
                 }

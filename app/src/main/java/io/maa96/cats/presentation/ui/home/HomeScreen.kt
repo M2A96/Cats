@@ -1,6 +1,5 @@
 package io.maa96.cats.presentation.ui.home
 
-import android.util.Log
 import androidx.compose.animation.core.animateFloat
 import androidx.compose.animation.core.infiniteRepeatable
 import androidx.compose.animation.core.rememberInfiniteTransition
@@ -9,12 +8,22 @@ import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
-import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.*
 import androidx.compose.material3.*
+import androidx.compose.material3.Card
+import androidx.compose.material3.ExperimentalMaterial3Api
+import androidx.compose.material3.Icon
+import androidx.compose.material3.IconButton
+import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.OutlinedTextField
+import androidx.compose.material3.Scaffold
+import androidx.compose.material3.Surface
+import androidx.compose.material3.Text
+import androidx.compose.material3.TopAppBar
+import androidx.compose.material3.TopAppBarDefaults
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.remember
@@ -34,6 +43,7 @@ import androidx.compose.ui.unit.dp
 import io.maa96.cats.R
 import io.maa96.cats.domain.model.Cat
 import io.maa96.cats.presentation.theme.CatsTheme
+import io.maa96.cats.presentation.theme.defaultIconSize
 import io.maa96.cats.presentation.ui.DynamicAsyncImage
 
 @Composable
@@ -53,8 +63,9 @@ fun HomeScreen(
             )
         },
         floatingActionButton = {
-            ThemeToggleFab(
-                onToggleTheme = { onEvent(HomeScreenEvent.ToggleTheme) }
+            ThemeToggleButton(
+                darkTheme = state.currentThemIsDark,
+                onToggleTheme = { onEvent(HomeScreenEvent.ToggleTheme(state.currentThemIsDark)) }
             )
         },
         snackbarHost = { SnackbarHost(hostState = snackbarHostState) }
@@ -67,10 +78,7 @@ fun HomeScreen(
         ) {
             SearchBar(
                 query = state.searchQuery,
-                onQueryChange = { query ->
-                    Log.d("HomeScreen", "SearchBar query changed: $query")
-                    onEvent(HomeScreenEvent.OnSearchQueryChange(query))
-                }
+                onQueryChange = { onEvent(HomeScreenEvent.OnSearchQueryChange(it)) }
             )
 
             when {
@@ -88,7 +96,7 @@ fun HomeScreen(
                 }
                 else -> {
                     CatBreedList(
-                        breeds = if (state.showingFavoritesOnly) state.filteredBreeds else state.breeds,
+                        breeds = if (state.searchQuery.isNotBlank()) state.filteredBreeds else if (state.showingFavoritesOnly) state.filteredBreeds else state.breeds,
                         isLoadingMore = state.isLoadingMore,
                         onBreedClick = onNavigateToDetails,
                         onFavoriteToggle = { breedId, isFav ->
@@ -157,20 +165,19 @@ fun HomeAppBar(
 }
 
 @Composable
-fun ThemeToggleFab(
-    onToggleTheme: () -> Unit,
-    modifier: Modifier = Modifier
+fun ThemeToggleButton(
+    darkTheme: Boolean,
+    onToggleTheme: (Boolean) -> Unit
 ) {
-    FloatingActionButton(
-        onClick = onToggleTheme,
-        containerColor = MaterialTheme.colorScheme.primaryContainer,
-        modifier = modifier
-    ) {
-        Icon(
-            imageVector = Icons.Default.DateRange,
-            contentDescription = stringResource(R.string.toggle_theme)
+    Switch(
+        modifier = Modifier.size(defaultIconSize),
+        checked = darkTheme,
+        onCheckedChange = { onToggleTheme(it) },
+        colors = SwitchDefaults.colors(
+            checkedThumbColor = MaterialTheme.colorScheme.secondary,
+            uncheckedThumbColor = MaterialTheme.colorScheme.primary
         )
-    }
+    )
 }
 
 @Composable
@@ -225,14 +232,12 @@ fun CatBreedList(
     onLoadMore: () -> Unit,
     modifier: Modifier = Modifier
 ) {
-    val lazyListState = rememberLazyListState()
     LazyColumn(
         modifier = modifier
             .fillMaxWidth()
             .padding(horizontal = 16.dp),
         verticalArrangement = Arrangement.spacedBy(16.dp),
-        contentPadding = PaddingValues(vertical = 16.dp),
-        state = lazyListState
+        contentPadding = PaddingValues(vertical = 16.dp)
     ) {
         items(
             items = breeds,
@@ -646,8 +651,56 @@ fun CatBreedCardPreview() {
 
 @Preview(showBackground = true, widthDp = 360, heightDp = 640)
 @Composable
-fun HomeScreenPreview() {
-    CatsTheme {
+fun HomeScreenLightPreview() {
+    CatsTheme(darkTheme = false) {
+        HomeScreen(
+            state = HomeScreenState(
+                searchQuery = "Bengal",
+                filteredBreeds = listOf(
+                    Cat(
+                        id = "beng",
+                        name = "Bengal",
+                        images = listOf("https://cdn2.thecatapi.com/images/xnsqonbjW.jpg"),
+                        temperament = "Alert, Agile, Energetic",
+                        description = "Bengals are a lot of fun to live with, but they're definitely not the cat for everyone, or for first-time cat owners. Extremely intelligent, curious and active, they demand a lot of interaction and woe betide the owner who doesn't provide it.",
+                        origin = "United States",
+                        lifeSpan = "12-16 years",
+                        weight = "8-15 lbs",
+                        hypoallergenic = 0,
+                        affectionLevel = 3,
+                        childFriendly = 3,
+                        strangerFriendly = 3,
+                        wikipediaUrl = "https://en.wikipedia.org/wiki/Bengal_cat",
+                        isFavorite = true
+                    ),
+                    Cat(
+                        id = "siam",
+                        name = "Siamese",
+                        images = listOf("https://cdn2.thecatapi.com/images/xnsqonbjW.jpg"),
+                        temperament = "Curious, Intelligent, Social",
+                        origin = "Thailand",
+                        description = "Bengals are a lot of fun to live with, but they're definitely not the cat for everyone, or for first-time cat owners. Extremely intelligent, curious and active, they demand a lot of interaction and woe betide the owner who doesn't provide it.",
+                        lifeSpan = "12-16 years",
+                        weight = "8-15 lbs",
+                        hypoallergenic = 0,
+                        affectionLevel = 3,
+                        childFriendly = 3,
+                        strangerFriendly = 3,
+                        wikipediaUrl = "https://en.wikipedia.org/wiki/Bengal_cat",
+                        isFavorite = true
+                    )
+                )
+            ),
+            onEvent = {},
+            onNavigateToDetails = {}
+        )
+    }
+}
+
+@Preview(showBackground = true, widthDp = 360, heightDp = 640)
+@Composable
+fun HomeScreenDarkPreview() {
+    CatsTheme(darkTheme = true) {
         HomeScreen(
             state = HomeScreenState(
                 searchQuery = "Bengal",

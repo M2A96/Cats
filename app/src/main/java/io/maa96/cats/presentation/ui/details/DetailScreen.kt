@@ -123,7 +123,6 @@ fun DetailContent(
                 )?.let {
                 DynamicAsyncImage(
                     imageUrl = it,
-
                     contentDescription = "${catDetail.name} ${stringResource(R.string.cat_image)}",
                     contentScale = ContentScale.Crop,
                     modifier = Modifier.fillMaxSize()
@@ -173,10 +172,11 @@ fun DetailContent(
             onImageSelect = onImageSelect
         )
 
-        // Detail Content
+        // Rest of the detail content remains the same
         Column(
             modifier = Modifier.padding(16.dp)
         ) {
+            // Existing content...
             Text(
                 text = catDetail.name,
                 style = MaterialTheme.typography.headlineMedium,

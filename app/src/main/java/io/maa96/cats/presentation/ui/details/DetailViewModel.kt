@@ -47,6 +47,7 @@ class DetailViewModel @Inject constructor(
         when (event) {
             is DetailScreenEvent.OnGetDetailResult -> fetchCatDetailsAndImages(event.breedId)
             is DetailScreenEvent.Refresh -> refresh()
+            is DetailScreenEvent.RefreshImages -> refreshImages()
             is DetailScreenEvent.SelectImage -> updateSelectedImage(event.index)
             is DetailScreenEvent.ToggleFavorite -> toggleFavorite(event.breed)
             is DetailScreenEvent.ClearError -> clearError()
@@ -88,18 +89,8 @@ class DetailViewModel @Inject constructor(
     private fun fetchBreedImages(breedId: String) {
         viewModelScope.launch {
             getBreedImagesUseCase(breedId)
-                .onStart {
-                    updateState { it.copy(isLoading = true) }
-                }
                 .catch { error ->
                     Log.e(TAG, "Fetch breed images error: ${error.message}", error)
-                    updateState {
-                        it.copy(
-                            isLoading = false,
-                            error = error.message,
-                            hasShownError = true
-                        )
-                    }
                 }
                 .collect { result ->
                     Log.d(TAG, "Collected breed images for breedId $breedId: $result")
@@ -160,48 +151,34 @@ class DetailViewModel @Inject constructor(
                 updateState { state ->
                     val updatedCatDetail = state.catDetail?.copy(images = result.data.orEmpty())
                     state.copy(
-                        catDetail = updatedCatDetail,
-                        isLoading = false,
-                        error = null,
-                        lastUpdated = getCurrentDateTime(),
-                        isStale = false
+                        catDetail = updatedCatDetail
                     )
                 }
             }
             is Resource.Error -> {
                 Log.d(
                     TAG,
-                    "Error result: message=${result.message}, hasData=${!result.data.isNullOrEmpty()}, hasShownError=${_uiState.value.hasShownError}"
+                    "Error result for images: message=${result.message}, hasData=${!result.data.isNullOrEmpty()}"
                 )
-                updateState {
+
+                // Still update with any available images from the error result
+                updateState { state ->
                     val updatedCatDetail = if (!result.data.isNullOrEmpty()) {
-                        it.catDetail?.copy(images = result.data)
+                        state.catDetail?.copy(images = result.data)
                     } else {
-                        it.catDetail
+                        state.catDetail // Keep existing images if any
                     }
-                    if (it.hasShownError && result.data.isNullOrEmpty()) {
-                        Log.d(TAG, "Ignoring repeat error: ${result.message}")
-                        it.copy(
-                            catDetail = updatedCatDetail,
-                            isLoading = false
-                        )
-                    } else {
-                        it.copy(
-                            catDetail = updatedCatDetail,
-                            isLoading = false,
-                            error = result.message,
-                            hasShownError = true
-                        )
-                    }
+
+                    // We don't set the main error state, just the imagesLoadingError
+                    state.copy(
+                        catDetail = updatedCatDetail
+                    )
                 }
             }
             is Resource.Loading -> {
-                updateState {
-                    it.copy(
-                        isLoading = true,
-                        error = null
-                    )
-                }
+//                updateState { state ->
+//                    state.copy(isImagesLoading = true)
+//                }
             }
         }
     }
@@ -262,6 +239,14 @@ class DetailViewModel @Inject constructor(
         val currentBreedId = _uiState.value.breedId
         if (currentBreedId.isNotBlank()) {
             fetchCatDetailsAndImages(currentBreedId)
+        }
+    }
+
+    private fun refreshImages() {
+        val currentBreedId = _uiState.value.breedId
+        if (currentBreedId.isNotBlank()) {
+            // Only fetch images, don't trigger full screen refresh
+            fetchBreedImages(currentBreedId)
         }
     }
 

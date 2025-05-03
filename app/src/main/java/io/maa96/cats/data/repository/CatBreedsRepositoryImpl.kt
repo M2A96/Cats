@@ -1,5 +1,6 @@
 package io.maa96.cats.data.repository
 
+import android.util.Log
 import androidx.room.withTransaction
 import io.maa96.cats.data.dto.ExtractUrls
 import io.maa96.cats.data.dto.toEntity
@@ -32,9 +33,10 @@ class CatBreedsRepositoryImpl @Inject constructor(
             fetch = {
                 api.getCatBreeds(limit, page)
             },
-            saveFetchedResult = {
+            saveFetchedResult = { res ->
+                Log.d("CatBreedsRepositoryImpl", "getCatBreeds: $res")
                 db.withTransaction {
-                    dao.insertBreeds(it.map { it.toEntity() })
+                    dao.insertBreeds(res.map { it.toEntity() })
                 }
             }
         )

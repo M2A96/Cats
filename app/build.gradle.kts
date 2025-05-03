@@ -2,10 +2,10 @@ plugins {
     alias(libs.plugins.android.application)
     alias(libs.plugins.kotlin.android)
     alias(libs.plugins.kotlin.compose)
-    id("com.google.dagger.hilt.android")
-    kotlin("kapt")
-    id("com.google.devtools.ksp")
-    id("org.jlleitschuh.gradle.ktlint")
+    alias(libs.plugins.hilt)
+    alias(libs.plugins.kapt)
+    alias(libs.plugins.ksp)
+    alias(libs.plugins.ktlint)
 }
 
 // Configure ktlint
@@ -117,4 +117,5 @@ dependencies {
     implementation(libs.coil.kt.compose)
 
     implementation(libs.androidx.navigation.compose)
+    api(libs.datastore.preferences)
 }

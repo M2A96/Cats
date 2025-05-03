@@ -7,6 +7,8 @@ import dagger.hilt.android.lifecycle.HiltViewModel
 import io.maa96.cats.domain.model.Cat
 import io.maa96.cats.domain.model.Resource
 import io.maa96.cats.domain.usecase.GetCatBreedsUseCase
+import io.maa96.cats.domain.usecase.GetThemeUseCase
+import io.maa96.cats.domain.usecase.SaveThemeUseCase
 import io.maa96.cats.domain.usecase.SearchBreedsUseCase
 import io.maa96.cats.domain.usecase.UpdateFavoriteStatusUseCase
 import java.time.LocalDateTime
@@ -32,13 +34,16 @@ class HomeViewModel @Inject constructor(
     private val getCatBreedsUseCase: GetCatBreedsUseCase,
     private val searchBreedsUseCase: SearchBreedsUseCase,
     private val updateFavoriteStatusUseCase: UpdateFavoriteStatusUseCase,
-    private val searchDebouncer: SearchDebouncer
+    private val searchDebouncer: SearchDebouncer,
+    private val saveThemeUseCase: SaveThemeUseCase,
+    private val getThemeUseCase: GetThemeUseCase
 ) : ViewModel() {
     private val _uiState = MutableStateFlow(HomeScreenState())
     val uiState: StateFlow<HomeScreenState> = _uiState.asStateFlow()
 
     init {
         setupSearchDebouncing()
+        getTheme()
     }
 
     fun onEvent(event: HomeScreenEvent) {
@@ -47,7 +52,7 @@ class HomeViewModel @Inject constructor(
             HomeScreenEvent.ShowFavorites -> toggleFavoritesFilter()
             HomeScreenEvent.Refresh -> refreshData()
             is HomeScreenEvent.ToggleFavorite -> toggleFavorite(event.breedId, event.isFavorite)
-            HomeScreenEvent.ToggleTheme -> toggleTheme()
+            is HomeScreenEvent.ToggleTheme -> saveTheme(event.isDark)
             HomeScreenEvent.LoadMoreBreeds -> loadMoreBreeds()
             HomeScreenEvent.ClearError -> clearError()
         }.also { Log.d(TAG, "Processed event: $event") }
@@ -70,6 +75,24 @@ class HomeViewModel @Inject constructor(
 
     private fun loadInitialBreeds() {
         loadBreeds(page = 0, isInitialLoad = true)
+    }
+    private fun getTheme() {
+        viewModelScope.launch(Dispatchers.IO) {
+            getThemeUseCase()
+                .catch {
+                    updateState { it.copy(currentThemIsDark = true) }
+                }
+                .collect { isThemeDark ->
+                    updateState { it.copy(currentThemIsDark = isThemeDark) }
+                }
+        }
+    }
+
+    private fun saveTheme(themeIsDark: Boolean) {
+        viewModelScope.launch(Dispatchers.IO) {
+            saveThemeUseCase(themeIsDark.not())
+            updateState { it.copy(currentThemIsDark = themeIsDark.not()) }
+        }
     }
 
     private fun loadMoreBreeds() {
@@ -188,13 +211,12 @@ class HomeViewModel @Inject constructor(
     private fun performSearch(query: String) {
         viewModelScope.launch {
             Log.d(TAG, "Performing search for query: $query")
-            updateState { it.copy(isLoadingSearch = true) }
             searchBreedsUseCase(query)
                 .catch { error ->
                     Log.e(TAG, "Search error: ${error.message}", error)
                     updateState {
                         it.copy(
-                            isLoadingSearch = false,
+                            isLoading = false,
                             filteredBreeds = emptyList(),
                             error = "Failed to search: ${error.message}",
                             hasShownError = true
@@ -205,7 +227,7 @@ class HomeViewModel @Inject constructor(
                     Log.d(TAG, "Search result: $result")
                     updateState {
                         it.copy(
-                            isLoadingSearch = false,
+                            isLoading = result is Resource.Loading,
                             filteredBreeds = result.data.orEmpty(),
                             error = (result as? Resource.Error)?.message,
                             hasShownError = result is Resource.Error
@@ -240,7 +262,7 @@ class HomeViewModel @Inject constructor(
     }
 
     private fun clearSearchResults() {
-        updateState { it.copy(filteredBreeds = it.breeds, isLoadingSearch = false) }
+        updateState { it.copy(filteredBreeds = it.breeds, isLoading = false) }
     }
 
     private fun shouldSkipLoad(isInitialLoad: Boolean): Boolean {

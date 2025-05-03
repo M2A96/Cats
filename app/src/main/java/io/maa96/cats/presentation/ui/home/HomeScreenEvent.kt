@@ -5,7 +5,7 @@ sealed class HomeScreenEvent {
     data class ToggleFavorite(val breedId: String, val isFavorite: Boolean) : HomeScreenEvent()
     data object Refresh : HomeScreenEvent()
     data object ShowFavorites : HomeScreenEvent()
-    data object ToggleTheme : HomeScreenEvent()
+    data class ToggleTheme(val isDark: Boolean) : HomeScreenEvent()
     object LoadMoreBreeds : HomeScreenEvent()
     object ClearError : HomeScreenEvent()
 }
