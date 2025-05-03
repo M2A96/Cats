@@ -3,6 +3,7 @@ package io.maa96.cats.data.repository
 import androidx.room.withTransaction
 import io.maa96.cats.data.dto.ExtractUrls
 import io.maa96.cats.data.dto.toEntity
+import io.maa96.cats.data.mapper.ErrorMapper
 import io.maa96.cats.data.source.local.db.CatsDatabase
 import io.maa96.cats.data.source.local.db.dao.BreedDao
 import io.maa96.cats.data.source.local.db.entity.toDomain
@@ -42,9 +43,10 @@ class CatBreedsRepositoryImpl @Inject constructor(
         try {
             emit(Resource.Loading())
             val breed = dao.getBreedById(breedId).toDomain()
-            emit(Resource.Success(breed))
             emit(Resource.Loading(false))
+            emit(Resource.Success(breed))
         } catch (e: Exception) {
+            emit(Resource.Error(ErrorMapper.map(e), data = null))
         }
     }
 
@@ -70,7 +72,7 @@ class CatBreedsRepositoryImpl @Inject constructor(
             dao.updateFavStatus(breedId, isFav)
             emit(Resource.Success(true))
         } catch (e: Exception) {
-            emit(Resource.Error(e.message ?: "An error occurred", false))
+            emit(Resource.Error(ErrorMapper.map(e), false))
         }
     }
 

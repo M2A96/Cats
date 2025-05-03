@@ -13,6 +13,7 @@ import javax.inject.Inject
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.catch
+import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
 
@@ -41,9 +42,26 @@ class DetailViewModel @Inject constructor(
             is DetailScreenEvent.Refresh -> refresh()
             is DetailScreenEvent.SelectImage -> updateSelectedImage(event.index)
             is DetailScreenEvent.ToggleFavorite -> toggleFavorite(event.breed)
-            is DetailScreenEvent.OnGetDetailResult -> {
-                getCatBreedDetailById(event.breedId)
-                getBreedImages(event.breedId)
+            is DetailScreenEvent.OnGetDetailResult -> fetchCatDetailsAndImages(event.breedId)
+        }
+    }
+
+    private fun fetchCatDetailsAndImages(breedId: String) {
+        viewModelScope.launch {
+            try {
+                // Combine the two flows
+                getCatBreedByIdUseCase(breedId)
+                    .combine(getBreedImagesUseCase(breedId)) { catBreed, breedImages ->
+                        Pair(catBreed, breedImages)
+                    }
+                    .collect { (catBreed, breedImages) ->
+                        updateUiState(catBreed)
+                        updateCatImages(breedImages)
+                    }
+            } catch (e: Exception) {
+                _uiState.update {
+                    it.copy(isLoading = false, error = e.message)
+                }
             }
         }
     }
@@ -104,11 +122,20 @@ class DetailViewModel @Inject constructor(
         }
     }
 
-    private fun updateCatImages(catBreed: Resource<List<String>>) {
-        when (catBreed) {
+    private fun updateCatImages(catBreedImages: Resource<List<String>>) {
+        when (catBreedImages) {
             is Resource.Error -> {
-                _uiState.update {
-                    it.copy(isLoading = false, error = catBreed.message)
+                if (catBreedImages.data.isNullOrEmpty().not()) {
+                    _uiState.update { currentState ->
+                        currentState.copy(
+                            isLoading = false,
+                            catDetail = currentState.catDetail?.copy(images = catBreedImages.data)
+                        )
+                    }
+                } else {
+                    _uiState.update {
+                        it.copy(isLoading = false, error = catBreedImages.message)
+                    }
                 }
             }
             is Resource.Loading -> {
@@ -120,7 +147,7 @@ class DetailViewModel @Inject constructor(
                 _uiState.update { currentState ->
                     currentState.copy(
                         isLoading = false,
-                        catDetail = currentState.catDetail?.copy(images = catBreed.data)
+                        catDetail = currentState.catDetail?.copy(images = catBreedImages.data)
                     )
                 }
             }

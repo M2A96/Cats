@@ -13,6 +13,7 @@ import java.text.SimpleDateFormat
 import java.util.Date
 import java.util.Locale
 import javax.inject.Inject
+import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.catch
@@ -62,7 +63,7 @@ class HomeViewModel @Inject constructor(
     // ----- Search Functionality -----
 
     private fun setupSearchDebouncing() {
-        viewModelScope.launch {
+        viewModelScope.launch(Dispatchers.IO) {
             searchDebouncer.getQueryFlow()
                 .collect { query ->
                     if (query.isNotBlank()) {

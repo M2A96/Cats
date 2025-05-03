@@ -1,5 +1,6 @@
 package io.maa96.cats.domain.repository
 
+import io.maa96.cats.data.mapper.ErrorMapper
 import io.maa96.cats.domain.model.Resource
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.emitAll
@@ -31,7 +32,7 @@ abstract class BaseRepository {
                 saveFetchedResult(fetch())
                 query().map { Resource.Success(it) }
             } catch (throwable: Throwable) {
-                query().map { Resource.Error(throwable.message!!, it) }
+                query().map { Resource.Error(ErrorMapper.map(throwable), it) }
             }
         } else {
             query().map { Resource.Success(it) }

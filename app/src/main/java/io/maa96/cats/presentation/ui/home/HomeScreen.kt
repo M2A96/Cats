@@ -55,7 +55,6 @@ import io.maa96.cats.R
 import io.maa96.cats.domain.model.Cat
 import io.maa96.cats.presentation.theme.CatsTheme
 import io.maa96.cats.presentation.ui.DynamicAsyncImage
-import io.maa96.cats.presentation.ui.common.ErrorManager
 
 @Composable
 fun HomeScreen(
@@ -539,12 +538,21 @@ fun NetworkErrorSnackbar(
     onRetry: () -> Unit,
     snackbarHostState: SnackbarHostState
 ) {
-    ErrorManager.ShowErrorSnackbar(
-        errorMessage = errorMessage,
-        onDismiss = onDismiss,
-        onRetry = onRetry,
-        snackbarHostState = snackbarHostState
-    )
+    val retryLabel = stringResource(R.string.retry)
+
+    errorMessage?.let {
+        LaunchedEffect(errorMessage) {
+            val result = snackbarHostState.showSnackbar(
+                message = it,
+                actionLabel = retryLabel,
+                duration = SnackbarDuration.Long
+            )
+            when (result) {
+                SnackbarResult.ActionPerformed -> onRetry()
+                SnackbarResult.Dismissed -> onDismiss()
+            }
+        }
+    }
 }
 
 /**
