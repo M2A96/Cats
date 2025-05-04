@@ -31,6 +31,7 @@ class DetailViewModelTest {
 
     private val mockCat = Cat(
         id = "1",
+        index = 1,
         name = "Siamese",
         description = "The Siamese cat is one of the first distinctly recognized breeds of Asian cat.",
         temperament = "Active, Intelligent, Social",

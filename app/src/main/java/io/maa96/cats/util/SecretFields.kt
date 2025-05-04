@@ -1,16 +1,15 @@
 package io.maa96.cats.util
 
+import io.maa96.cats.BuildConfig
 import javax.inject.Inject
 
 class SecretFields @Inject constructor() {
     private val debugBaseUrl = "https://api.thecatapi.com/"
     private val releaseBaseUrl = "https://api.thecatapi.com/"
 
-    val apiKey = "live_4ugWfKK5r7jzEzxKeav25VgUSE3oICAd5bIJEHeZY7RhKrsQm6leJ8uddfow9rMO"
+    val apiKey = BuildConfig.CAT_API_KEY
 
-    //    todo remember to use BuildConfig.DEBUG
-    private val isDebug: Boolean = true
-    fun getBaseUrl(): String = if (isDebug) {
+    fun getBaseUrl(): String = if (BuildConfig.DEBUG) {
         debugBaseUrl
     } else {
         releaseBaseUrl

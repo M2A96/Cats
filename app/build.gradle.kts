@@ -1,3 +1,5 @@
+import java.util.Properties
+
 plugins {
     alias(libs.plugins.android.application)
     alias(libs.plugins.kotlin.android)
@@ -46,6 +48,17 @@ android {
         versionCode = 1
         versionName = "1.0"
 
+        val localProperties = Properties().apply {
+            val localPropertiesFile = rootProject.file("local.properties")
+            if (localPropertiesFile.exists()) {
+                load(localPropertiesFile.inputStream())
+            }
+        }
+        val apiKey = localProperties.getProperty("CAT_API_KEY") ?: "API KEY Not Found!" // Default if not found
+
+        defaultConfig {
+            buildConfigField("String", "CAT_API_KEY", "\"$apiKey\"")
+        }
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
     }
 

@@ -6,29 +6,13 @@ import androidx.lifecycle.viewModelScope
 import dagger.hilt.android.lifecycle.HiltViewModel
 import io.maa96.cats.domain.model.Cat
 import io.maa96.cats.domain.model.Resource
-import io.maa96.cats.domain.usecase.GetCatBreedsUseCase
-import io.maa96.cats.domain.usecase.GetThemeUseCase
-import io.maa96.cats.domain.usecase.SaveThemeUseCase
-import io.maa96.cats.domain.usecase.SearchBreedsUseCase
-import io.maa96.cats.domain.usecase.UpdateFavoriteStatusUseCase
+import io.maa96.cats.domain.usecase.*
 import java.time.LocalDateTime
 import javax.inject.Inject
 import kotlinx.coroutines.Dispatchers
-import kotlinx.coroutines.flow.MutableStateFlow
-import kotlinx.coroutines.flow.StateFlow
-import kotlinx.coroutines.flow.asStateFlow
-import kotlinx.coroutines.flow.catch
-import kotlinx.coroutines.flow.onStart
-import kotlinx.coroutines.flow.update
+import kotlinx.coroutines.flow.*
 import kotlinx.coroutines.launch
 
-private const val TAG = "HomeViewModel"
-private const val PAGE_SIZE = 10
-
-/**
- * ViewModel for the Home screen that manages cat breed data, search functionality,
- * favorites filtering, and pagination.
- */
 @HiltViewModel
 class HomeViewModel @Inject constructor(
     private val getCatBreedsUseCase: GetCatBreedsUseCase,
@@ -38,6 +22,7 @@ class HomeViewModel @Inject constructor(
     private val saveThemeUseCase: SaveThemeUseCase,
     private val getThemeUseCase: GetThemeUseCase
 ) : ViewModel() {
+
     private val _uiState = MutableStateFlow(HomeScreenState())
     val uiState: StateFlow<HomeScreenState> = _uiState.asStateFlow()
 
@@ -48,7 +33,7 @@ class HomeViewModel @Inject constructor(
 
     fun onEvent(event: HomeScreenEvent) {
         when (event) {
-            is HomeScreenEvent.OnSearchQueryChange -> updateSearchQuery(event.query)
+            is HomeScreenEvent.OnSearchQueryChange -> handleSearchQueryChange(event.query)
             HomeScreenEvent.ShowFavorites -> toggleFavoritesFilter()
             HomeScreenEvent.Refresh -> refreshData()
             is HomeScreenEvent.ToggleFavorite -> toggleFavorite(event.breedId, event.isFavorite)
@@ -62,14 +47,96 @@ class HomeViewModel @Inject constructor(
         viewModelScope.launch(Dispatchers.Main) {
             searchDebouncer.getQueryFlow().collect { query ->
                 Log.d(TAG, "SearchDebouncer emitted query: $query")
-                updateState { it.copy(searchQuery = query) }
-                if (query.isNotBlank()) {
-                    performSearch(query)
-                } else {
-                    clearSearchResults()
-                    loadInitialBreeds()
+                performDebouncedSearch(query)
+            }
+        }
+    }
+
+    private fun handleSearchQueryChange(query: String) {
+        Log.d(TAG, "handleSearchQueryChange: $query")
+        updateState {
+            it.copy(searchQuery = query)
+        }
+        searchDebouncer.updateQuery(query)
+    }
+
+    private fun performDebouncedSearch(query: String) {
+        if (query.isNotBlank()) {
+            performSearch(query)
+        } else {
+            clearSearchResults()
+            if (_uiState.value.breeds.isEmpty()) {
+                loadInitialBreeds()
+            }
+        }
+    }
+
+    private fun performSearch(query: String) {
+        viewModelScope.launch {
+            Log.d(TAG, "Performing search for query: $query")
+            searchBreedsUseCase(query)
+                .onStart {
+                    updateState { it.copy(isLoading = true) }
+                }
+                .catch { error ->
+                    Log.e(TAG, "Search error: ${error.message}", error)
+                    updateState {
+                        it.copy(
+                            isLoading = false,
+                            filteredBreeds = emptyList(),
+                            error = "Failed to search: ${error.message}",
+                            hasShownError = true
+                        )
+                    }
+                }
+                .collect { result ->
+                    Log.d(TAG, "Search result for '$query': $result")
+                    handleSearchResult(result)
+                }
+        }
+    }
+
+    private fun handleSearchResult(result: Resource<List<Cat>>) {
+        when (result) {
+            is Resource.Success -> {
+                updateState {
+                    it.copy(
+                        isLoading = false,
+                        filteredBreeds = result.data.orEmpty(),
+                        error = null
+                    )
                 }
             }
+            is Resource.Error -> {
+                updateState {
+                    it.copy(
+                        isLoading = false,
+                        filteredBreeds = result.data.orEmpty(),
+                        error = result.message,
+                        hasShownError = true
+                    )
+                }
+            }
+            is Resource.Loading -> {
+                updateState {
+                    it.copy(isLoading = true)
+                }
+            }
+        }
+    }
+
+    private fun clearSearchResults() {
+        updateState { state ->
+            // When clearing search, show either favorites or all breeds
+            val displayedBreeds = if (state.showingFavoritesOnly) {
+                state.breeds.filter { it.isFavorite }
+            } else {
+                state.breeds
+            }
+            state.copy(
+                filteredBreeds = displayedBreeds,
+                isLoading = false
+            )
         }
     }
 
@@ -106,12 +173,27 @@ class HomeViewModel @Inject constructor(
             Log.d(TAG, "Skipping loadBreeds: already loaded or loading")
             return
         }
+
         viewModelScope.launch {
             getCatBreedsUseCase(limit = PAGE_SIZE, page = page)
-                .onStart { updateState { it.copy(isLoading = isInitialLoad, isLoadingMore = !isInitialLoad) } }
+                .onStart {
+                    updateState {
+                        it.copy(
+                            isLoading = isInitialLoad,
+                            isLoadingMore = !isInitialLoad
+                        )
+                    }
+                }
                 .catch { error ->
-                    Log.e(TAG, "Load breeds error: ${error.message}")
-                    updateState { it.copy(isLoading = false, isLoadingMore = false) }
+                    Log.e(TAG, "Load breeds error: ${error.message}", error)
+                    updateState {
+                        it.copy(
+                            isLoading = false,
+                            isLoadingMore = false,
+                            error = error.message,
+                            hasShownError = true
+                        )
+                    }
                 }
                 .collect { result ->
                     Log.d(TAG, "Collected result for page $page: $result")
@@ -124,14 +206,23 @@ class HomeViewModel @Inject constructor(
         when (result) {
             is Resource.Success -> {
                 val newBreeds = result.data.orEmpty()
-                updateState {
-                    it.copy(
-                        breeds = mergeBreeds(it, newBreeds, isInitialLoad),
-                        filteredBreeds = updateFilteredBreeds(it, newBreeds, isInitialLoad),
+                updateState { state ->
+                    val updatedBreeds = mergeBreeds(state, newBreeds, isInitialLoad)
+                    val updatedFilteredBreeds = if (state.searchQuery.isNotBlank()) {
+                        state.filteredBreeds
+                    } else if (state.showingFavoritesOnly) {
+                        updatedBreeds.filter { it.isFavorite }
+                    } else {
+                        updatedBreeds
+                    }
+
+                    state.copy(
+                        breeds = updatedBreeds,
+                        filteredBreeds = updatedFilteredBreeds,
                         isLoading = false,
                         isLoadingMore = false,
                         error = null,
-                        hasMoreData = newBreeds.isNotEmpty(),
+                        hasMoreData = newBreeds.size >= PAGE_SIZE,
                         currentPage = page,
                         lastUpdated = getCurrentDateTime(),
                         isStale = false
@@ -140,34 +231,7 @@ class HomeViewModel @Inject constructor(
             }
             is Resource.Error -> {
                 val newBreeds = result.data.orEmpty()
-                Log.d(
-                    TAG,
-                    "Error result: message=${result.message}, hasData=${newBreeds.isNotEmpty()}, hasShownError=${_uiState.value.hasShownError}, currentBreedsCount=${_uiState.value.breeds.size}, page=$page"
-                )
-                updateState {
-                    val updatedBreeds = mergeBreeds(it, newBreeds, isInitialLoad)
-                    val updatedFilteredBreeds = updateFilteredBreeds(it, newBreeds, isInitialLoad)
-                    if (page == 1 && it.hasShownError) {
-                        Log.d(TAG, "Ignoring repeat error for page 1: ${result.message}")
-                        it.copy(
-                            breeds = updatedBreeds,
-                            filteredBreeds = updatedFilteredBreeds,
-                            isLoading = false,
-                            isLoadingMore = false
-                        )
-                    } else {
-                        val errorMessage = if (page > 1) "Failed to load more data" else result.message
-                        Log.d(TAG, "Setting new error: $errorMessage")
-                        it.copy(
-                            breeds = updatedBreeds,
-                            filteredBreeds = updatedFilteredBreeds,
-                            isLoading = false,
-                            isLoadingMore = false,
-                            error = errorMessage,
-                            hasShownError = true
-                        )
-                    }
-                }
+                handleErrorResult(result, page, newBreeds, isInitialLoad)
             }
             is Resource.Loading -> {
                 updateState {
@@ -178,6 +242,61 @@ class HomeViewModel @Inject constructor(
                     )
                 }
             }
+        }
+    }
+
+    private fun handleErrorResult(result: Resource.Error<List<Cat>>, page: Int, newBreeds: List<Cat>, isInitialLoad: Boolean) {
+        Log.d(
+            TAG,
+            "Error result: message=${result.message}, hasData=${newBreeds.isNotEmpty()}, hasShownError=${_uiState.value.hasShownError}, page=$page"
+        )
+
+        updateState { state ->
+            val updatedBreeds = mergeBreeds(state, newBreeds, isInitialLoad)
+            val updatedFilteredBreeds = if (state.searchQuery.isNotBlank()) {
+                state.filteredBreeds
+            } else if (state.showingFavoritesOnly) {
+                updatedBreeds.filter { it.isFavorite }
+            } else {
+                updatedBreeds
+            }
+
+            if (page == 0 && state.hasShownError) {
+                Log.d(TAG, "Ignoring repeat error for page 0: ${result.message}")
+                state.copy(
+                    breeds = updatedBreeds,
+                    filteredBreeds = updatedFilteredBreeds,
+                    isLoading = false,
+                    isLoadingMore = false
+                )
+            } else {
+                val errorMessage = if (page > 0) "Failed to load more data" else result.message
+                Log.d(TAG, "Setting new error: $errorMessage")
+                state.copy(
+                    breeds = updatedBreeds,
+                    filteredBreeds = updatedFilteredBreeds,
+                    isLoading = false,
+                    isLoadingMore = false,
+                    error = errorMessage,
+                    hasShownError = true
+                )
+            }
+        }
+    }
+
+    private fun toggleFavoritesFilter() {
+        updateState { state ->
+            val showFavorites = !state.showingFavoritesOnly
+            val filteredBreeds = if (showFavorites) {
+                state.breeds.filter { it.isFavorite }
+            } else {
+                state.breeds
+            }
+            state.copy(
+                showingFavoritesOnly = showFavorites,
+                filteredBreeds = filteredBreeds,
+                searchQuery = "" // Clear search when toggling favorites
+            )
         }
     }
 
@@ -202,109 +321,22 @@ class HomeViewModel @Inject constructor(
         }
     }
 
-    private fun updateSearchQuery(query: String) {
-        Log.d(TAG, "updateSearchQuery: $query")
-        updateState { it.copy(searchQuery = query) }
-        searchDebouncer.updateQuery(query)
-    }
-
-    private fun performSearch(query: String) {
-        viewModelScope.launch {
-            Log.d(TAG, "Performing search for query: $query")
-            searchBreedsUseCase(query)
-                .catch { error ->
-                    Log.e(TAG, "Search error: ${error.message}", error)
-                    updateState {
-                        it.copy(
-                            isLoading = false,
-                            filteredBreeds = emptyList(),
-                            error = "Failed to search: ${error.message}",
-                            hasShownError = true
-                        )
-                    }
-                }
-                .collect { result ->
-                    Log.d(TAG, "Search result: $result")
-                    updateState {
-                        it.copy(
-                            isLoading = result is Resource.Loading,
-                            filteredBreeds = result.data.orEmpty(),
-                            error = (result as? Resource.Error)?.message,
-                            hasShownError = result is Resource.Error
-                        )
-                    }
-                }
-        }
-    }
-
-    private fun toggleFavoritesFilter() {
-        updateState { state ->
-            val showFavorites = !state.showingFavoritesOnly
-            val filteredBreeds = if (showFavorites) state.breeds.filter { it.isFavorite } else state.breeds
-            state.copy(
-                showingFavoritesOnly = showFavorites,
-                filteredBreeds = filteredBreeds
-            )
-        }
-    }
-
-    private fun refreshData() {
-        updateState { it.copy(isStale = true, hasShownError = false) }
-        loadInitialBreeds()
-    }
-
-    private fun toggleTheme() {
-        // TODO: Implement theme toggling
-    }
-
-    private fun clearError() {
-        updateState { it.copy(error = null) }
-    }
-
-    private fun clearSearchResults() {
-        updateState { it.copy(filteredBreeds = it.breeds, isLoading = false) }
-    }
-
-    private fun shouldSkipLoad(isInitialLoad: Boolean): Boolean {
-        val state = _uiState.value
-        val shouldSkip = if (isInitialLoad) {
-            state.isLoading || (state.breeds.isNotEmpty() && !state.isStale)
-        } else {
-            state.isLoadingMore
-        }
-        Log.d(
-            TAG,
-            "shouldSkipLoad: isInitialLoad=$isInitialLoad, shouldSkip=$shouldSkip, isLoading=${state.isLoading}, isLoadingMore=${state.isLoadingMore}, breedsCount=${state.breeds.size}, isStale=${state.isStale}"
-        )
-        return shouldSkip
-    }
-
-    private fun mergeBreeds(state: HomeScreenState, newBreeds: List<Cat>, isInitialLoad: Boolean): List<Cat> {
-        return if (isInitialLoad) {
-            newBreeds
-        } else {
-            val existingIds = state.breeds.map { it.id }.toSet()
-            state.breeds + newBreeds.filter { it.id !in existingIds }
-        }
-    }
-
-    private fun updateFilteredBreeds(state: HomeScreenState, newBreeds: List<Cat>, isInitialLoad: Boolean): List<Cat> {
-        if (state.searchQuery.isNotBlank()) {
-            // Preserve search results in filteredBreeds during loadBreeds
-            return state.filteredBreeds
-        }
-        val updatedBreeds = mergeBreeds(state, newBreeds, isInitialLoad)
-        return if (state.showingFavoritesOnly) updatedBreeds.filter { it.isFavorite } else updatedBreeds
-    }
-
     private fun updateBreedFavorite(breedId: String, isFavorite: Boolean) {
         updateState { state ->
             val updateBreed: (Cat) -> Cat = { breed ->
                 if (breed.id == breedId) breed.copy(isFavorite = isFavorite) else breed
             }
+            val updatedBreeds = state.breeds.map(updateBreed)
+            val updatedFilteredBreeds = state.filteredBreeds.map(updateBreed)
+
             state.copy(
-                breeds = state.breeds.map(updateBreed),
-                filteredBreeds = state.filteredBreeds.map(updateBreed)
+                breeds = updatedBreeds,
+                filteredBreeds = if (state.showingFavoritesOnly && !isFavorite) {
+                    // Remove from filtered list if unfavorited while showing favorites
+                    updatedFilteredBreeds.filter { it.id != breedId }
+                } else {
+                    updatedFilteredBreeds
+                }
             )
         }
     }
@@ -314,13 +346,41 @@ class HomeViewModel @Inject constructor(
         updateState { it.copy(error = "Failed to update favorite status") }
     }
 
+    private fun refreshData() {
+        updateState { it.copy(isStale = true, hasShownError = false) }
+        loadInitialBreeds()
+    }
+
+    private fun clearError() {
+        updateState { it.copy(error = null) }
+    }
+
+    private fun shouldSkipLoad(isInitialLoad: Boolean): Boolean {
+        val state = _uiState.value
+        val shouldSkip = if (isInitialLoad) {
+            state.isLoading || (state.breeds.isNotEmpty() && !state.isStale)
+        } else {
+            state.isLoadingMore || !state.hasMoreData
+        }
+        Log.d(
+            TAG,
+            "shouldSkipLoad: isInitialLoad=$isInitialLoad, shouldSkip=$shouldSkip, isLoading=${state.isLoading}, isLoadingMore=${state.isLoadingMore}, breedsCount=${state.breeds.size}, isStale=${state.isStale}"
+        )
+        return shouldSkip
+    }
+
+    private fun mergeBreeds(state: HomeScreenState, newBreeds: List<Cat>, isInitialLoad: Boolean): List<Cat> = if (isInitialLoad) {
+        newBreeds
+    } else {
+        val existingIds = state.breeds.map { it.id }.toSet()
+        state.breeds + newBreeds.filter { it.id !in existingIds }
+    }
+
     private fun updateState(transform: (HomeScreenState) -> HomeScreenState) {
         _uiState.update(transform)
     }
 
-    private fun getCurrentDateTime(): String {
-        return LocalDateTime.now().toString() // Replace with your implementation
-    }
+    private fun getCurrentDateTime(): String = LocalDateTime.now().toString()
 
     companion object {
         private const val TAG = "HomeViewModel"

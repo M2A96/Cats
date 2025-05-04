@@ -43,6 +43,21 @@ The application follows Clean Architecture principles with an MVI (Model-View-In
 - JDK 11
 - Android SDK 35 (compileSdk)
 - Minimum SDK: 24
+- API Key from [The Cat API](https://thecatapi.com/)
+
+## API Key Configuration
+
+This project uses [The Cat API](https://thecatapi.com/) to fetch cat breeds data. To run the project locally:
+
+1. Visit [The Cat API](https://thecatapi.com/) and sign up for a free account
+2. Once registered, get your API key from your account dashboard
+3. In your project's root directory, create or open the `local.properties` file
+4. Add the following line to `local.properties`, replacing `YOUR_API_KEY` with your actual API key:
+   ```properties
+   CAT_API_KEY=YOUR_API_KEY
+   ```
+
+Note: The `local.properties` file is automatically ignored by git to keep your API key secure.
 
 ## Getting Started
 

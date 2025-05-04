@@ -595,6 +595,7 @@ fun DetailScreenPreview() {
             state = DetailScreenState(
                 catDetail = Cat(
                     id = "beng",
+                    index = 0,
                     name = "Bengal",
                     images = listOf("", "", "", ""),
                     description = "Bengals are a lot of fun to live with, but they're definitely not the cat for everyone, or for first-time cat owners. Extremely intelligent, curious and active, they demand a lot of interaction and woe betide the owner who doesn't provide it.",

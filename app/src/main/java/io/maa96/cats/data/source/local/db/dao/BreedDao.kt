@@ -13,7 +13,7 @@ interface BreedDao {
     @Insert(onConflict = OnConflictStrategy.REPLACE)
     suspend fun insertBreeds(breeds: List<CatBreedEntity>)
 
-    @Insert(onConflict = OnConflictStrategy.REPLACE)
+    @Insert(onConflict = OnConflictStrategy.IGNORE)
     suspend fun insertBreed(breed: CatBreedEntity)
 
     @Query("UPDATE breed SET isFavorite = :isFav WHERE id == :breedId")

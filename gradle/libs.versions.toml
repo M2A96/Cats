@@ -26,7 +26,7 @@ hiltNavigationCompose = "1.2.0"
 navigation-compose = "2.7.7"
 roomRuntime = "2.7.0"
 archCoreTesting = "2.2.0"
-androidxCoreTesting = "2.2.0"
+androidxCoreTesting = "1.5.0"
 dataStore = "1.1.3"
 
 

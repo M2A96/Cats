@@ -34,7 +34,10 @@ class CatBreedsRepositoryImplTest {
         // Given
         val mockBreeds = listOf(
             CatBreedEntity(
-                id = "1", name = "Siamese", isFavorite = false,
+                id = "1",
+                index = 1,
+                name = "Siamese",
+                isFavorite = false,
                 images = listOf("siamese1.jpg", "siamese2.jpg"),
                 description = "The Siamese cat is one of the first distinctly recognized breeds of Asian cat.",
                 temperament = "Active, Intelligent, Social",
@@ -48,7 +51,10 @@ class CatBreedsRepositoryImplTest {
                 wikipediaUrl = "https://en.wikipedia.org/wiki/Siamese_cat"
             ),
             CatBreedEntity(
-                id = "2", name = "Persian", isFavorite = true,
+                id = "2",
+                index = 2,
+                name = "Persian",
+                isFavorite = true,
                 images = listOf("persian1.jpg", "persian2.jpg"),
                 description = "The Persian cat is a long-haired breed of cat characterized by its round face.",
                 temperament = "Gentle, Quiet, Affectionate",
@@ -97,7 +103,10 @@ class CatBreedsRepositoryImplTest {
         val query = "Siamese"
         val mockBreeds = listOf(
             CatBreedEntity(
-                id = "1", name = "Siamese", isFavorite = false,
+                id = "1",
+                index = 1,
+                name = "Siamese",
+                isFavorite = false,
                 images = listOf("siamese1.jpg", "siamese2.jpg"),
                 description = "The Siamese cat is one of the first distinctly recognized breeds of Asian cat.",
                 temperament = "Active, Intelligent, Social",
@@ -130,7 +139,11 @@ class CatBreedsRepositoryImplTest {
         val breedId = "1"
         val mockImages = listOf("image1.jpg", "image2.jpg")
         val mockEntity = CatBreedEntity(
-            id = breedId, name = "Siamese", isFavorite = false, images = mockImages,
+            id = breedId,
+            index = 1,
+            name = "Siamese",
+            isFavorite = false,
+            images = mockImages,
             description = "The Siamese cat is one of the first distinctly recognized breeds of Asian cat.",
             temperament = "Active, Intelligent, Social",
             origin = "Thailand",
@@ -161,7 +174,10 @@ class CatBreedsRepositoryImplTest {
         // Given
         val breedId = "1"
         val mockBreed = CatBreedEntity(
-            id = breedId, name = "Siamese", isFavorite = false,
+            id = breedId,
+            index = 1,
+            name = "Siamese",
+            isFavorite = false,
             images = listOf("siamese1.jpg", "siamese2.jpg"),
             description = "The Siamese cat is one of the first distinctly recognized breeds of Asian cat.",
             temperament = "Active, Intelligent, Social",
@@ -191,7 +207,10 @@ class CatBreedsRepositoryImplTest {
         val page = 2
         val mockBreeds = listOf(
             CatBreedEntity(
-                id = "3", name = "Bengal", isFavorite = false,
+                id = "3",
+                index = 3,
+                name = "Bengal",
+                isFavorite = false,
                 images = listOf("bengal1.jpg"),
                 description = "Bengal cats are athletic and agile.",
                 temperament = "Active, Energetic",
@@ -232,7 +251,7 @@ class CatBreedsRepositoryImplTest {
 
         // Then
         assertTrue(result is Resource.Success)
-        assertTrue((result as Resource.Success).data.isEmpty())
+        (result as Resource.Success).data?.let { assertTrue(it.isEmpty()) }
     }
 
     @Test

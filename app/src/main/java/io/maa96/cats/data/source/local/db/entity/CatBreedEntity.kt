@@ -1,14 +1,14 @@
 package io.maa96.cats.data.source.local.db.entity
 
 import androidx.room.Entity
-import androidx.room.PrimaryKey
 import io.maa96.cats.domain.model.Cat
 
 @Entity(
-    tableName = "breed"
+    tableName = "breed",
+    primaryKeys = ["id", "index"]
 )
 data class CatBreedEntity(
-    @PrimaryKey
+    val index: Int,
     val id: String,
     val name: String,
     val images: List<String>?,
@@ -27,6 +27,7 @@ data class CatBreedEntity(
 
 fun CatBreedEntity.toDomain() = Cat(
     id = id,
+    index = index,
     name = name,
     images = images,
     description = description,

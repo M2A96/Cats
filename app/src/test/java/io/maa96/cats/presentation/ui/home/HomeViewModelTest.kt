@@ -4,6 +4,8 @@ import androidx.arch.core.executor.testing.InstantTaskExecutorRule
 import io.maa96.cats.domain.model.Cat
 import io.maa96.cats.domain.model.Resource
 import io.maa96.cats.domain.usecase.GetCatBreedsUseCase
+import io.maa96.cats.domain.usecase.GetThemeUseCase
+import io.maa96.cats.domain.usecase.SaveThemeUseCase
 import io.maa96.cats.domain.usecase.SearchBreedsUseCase
 import io.maa96.cats.domain.usecase.UpdateFavoriteStatusUseCase
 import io.mockk.coEvery
@@ -25,6 +27,9 @@ class HomeViewModelTest {
 
     private lateinit var viewModel: HomeViewModel
     private val getCatBreedsUseCase: GetCatBreedsUseCase = mockk()
+    private val getThemeUseCase: GetThemeUseCase = mockk()
+    private val saveThemeUseCase: SaveThemeUseCase = mockk()
+
     private val searchBreedsUseCase: SearchBreedsUseCase = mockk()
     private val updateFavoriteStatusUseCase: UpdateFavoriteStatusUseCase = mockk()
     private val searchDebouncer: SearchDebouncer = mockk(relaxed = true)
@@ -33,6 +38,7 @@ class HomeViewModelTest {
     private val mockCats = listOf(
         Cat(
             id = "1",
+            index = 1,
             name = "Siamese",
             description = "The Siamese cat is one of the first distinctly recognized breeds of Asian cat.",
             temperament = "Active, Intelligent, Social",
@@ -49,6 +55,7 @@ class HomeViewModelTest {
         ),
         Cat(
             id = "2",
+            index = 2,
             name = "Persian",
             description = "The Persian cat is a long-haired breed of cat characterized by its round face.",
             temperament = "Gentle, Quiet, Affectionate",
@@ -75,7 +82,9 @@ class HomeViewModelTest {
             getCatBreedsUseCase,
             searchBreedsUseCase,
             updateFavoriteStatusUseCase,
-            searchDebouncer
+            searchDebouncer,
+            saveThemeUseCase = TODO(),
+            getThemeUseCase = TODO()
         )
     }
 
@@ -93,7 +102,7 @@ class HomeViewModelTest {
     fun `toggling favorite should update breed status`() = runTest {
         val breed = mockCats[0]
 
-        viewModel.onEvent(HomeScreenEvent.ToggleFavorite(breed))
+        viewModel.onEvent(HomeScreenEvent.ToggleFavorite(breed.id, !breed.isFavorite))
 
         coVerify { updateFavoriteStatusUseCase(breed.id, !breed.isFavorite) }
     }
@@ -108,7 +117,7 @@ class HomeViewModelTest {
         viewModel.onEvent(HomeScreenEvent.OnSearchQueryChange(searchQuery))
 
         // Verify search debouncer was called with query
-        coVerify { searchDebouncer.setQuery(searchQuery) }
+        coVerify { searchDebouncer.updateQuery(searchQuery) }
     }
 
     @Test
@@ -144,7 +153,10 @@ class HomeViewModelTest {
         // Simulate an error state
         coEvery { getCatBreedsUseCase(any(), any()) } returns flowOf(Resource.Error("Test error", null))
         viewModel =
-            HomeViewModel(getCatBreedsUseCase, searchBreedsUseCase, updateFavoriteStatusUseCase, searchDebouncer)
+            HomeViewModel(
+                getCatBreedsUseCase, searchBreedsUseCase, updateFavoriteStatusUseCase, searchDebouncer,
+                saveThemeUseCase, getThemeUseCase
+            )
 
         // Clear the error
         viewModel.onEvent(HomeScreenEvent.ClearError)

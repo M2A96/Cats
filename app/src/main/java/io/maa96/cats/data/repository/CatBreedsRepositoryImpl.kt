@@ -1,6 +1,5 @@
 package io.maa96.cats.data.repository
 
-import android.util.Log
 import androidx.room.withTransaction
 import io.maa96.cats.data.dto.ExtractUrls
 import io.maa96.cats.data.dto.toEntity
@@ -11,7 +10,6 @@ import io.maa96.cats.data.source.local.db.entity.toDomain
 import io.maa96.cats.data.source.remote.api.CatApi
 import io.maa96.cats.domain.model.Cat
 import io.maa96.cats.domain.model.Resource
-import io.maa96.cats.domain.model.toEntity
 import io.maa96.cats.domain.repository.CatBreedsRepository
 import javax.inject.Inject
 import kotlinx.coroutines.flow.Flow
@@ -34,7 +32,6 @@ class CatBreedsRepositoryImpl @Inject constructor(
                 api.getCatBreeds(limit, page)
             },
             saveFetchedResult = { res ->
-                Log.d("CatBreedsRepositoryImpl", "getCatBreeds: $res")
                 db.withTransaction {
                     dao.insertBreeds(res.map { it.toEntity() })
                 }
@@ -63,7 +60,7 @@ class CatBreedsRepositoryImpl @Inject constructor(
         },
         saveFetchedResult = {
             db.withTransaction {
-                dao.insertBreeds(it.map { it.toEntity() })
+//                dao.insertBreeds(it.map { it.toEntity() })
             }
         }
     )

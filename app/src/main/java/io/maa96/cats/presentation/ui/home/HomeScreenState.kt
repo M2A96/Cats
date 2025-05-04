@@ -12,7 +12,7 @@ data class HomeScreenState(
     val error: String? = null,
     val isStale: Boolean = false,
     val hasMoreData: Boolean = true,
-    val currentPage: Int = 1,
+    val currentPage: Int = 0,
     val lastUpdated: String = "",
     val showingFavoritesOnly: Boolean = false,
     val hasShownError: Boolean = false

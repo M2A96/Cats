@@ -46,6 +46,7 @@ data class CatBreed(
 
 fun CatBreed.toEntity() = CatBreedEntity(
     id = id,
+    index = id.hashCode(),
     name = name,
     images = image?.let { listOf(it.url) },
     description = description,

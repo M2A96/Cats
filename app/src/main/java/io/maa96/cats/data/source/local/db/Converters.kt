@@ -1,6 +1,5 @@
 package io.maa96.cats.data.source.local.db
 
-import android.util.Log
 import androidx.room.TypeConverter
 import com.google.gson.Gson
 
@@ -16,8 +15,6 @@ class Converters {
 
         return value.removeSurrounding("[", "]")
             .split(",")
-            .map { it.trim().removeSurrounding("\"") }.also {
-                Log.d("TypeConvertor", "toStringList: $it")
-            }
+            .map { it.trim().removeSurrounding("\"") }
     }
 }
