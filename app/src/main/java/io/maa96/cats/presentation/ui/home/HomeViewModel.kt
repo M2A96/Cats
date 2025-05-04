@@ -39,7 +39,6 @@ class HomeViewModel @Inject constructor(
 
     init {
         setupSearchDebouncing()
-        loadInitialBreeds()
     }
 
     fun onEvent(event: HomeScreenEvent) {
@@ -70,7 +69,7 @@ class HomeViewModel @Inject constructor(
     }
 
     private fun loadInitialBreeds() {
-        loadBreeds(page = 1, isInitialLoad = true)
+        loadBreeds(page = 0, isInitialLoad = true)
     }
 
     private fun loadMoreBreeds() {

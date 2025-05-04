@@ -18,7 +18,7 @@ import io.maa96.cats.data.source.local.db.entity.CatBreedEntity
 @TypeConverters(Converters::class)
 abstract class CatsDatabase : RoomDatabase() {
     companion object {
-        const val DB_NAME = "snapAssignment.db"
+        const val DB_NAME = "TheCats.db"
         const val VERSION = 1
 
         @Volatile
