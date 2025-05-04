@@ -1,43 +1,24 @@
 package io.maa96.cats.presentation.ui.home
 
+import android.util.Log
 import androidx.compose.animation.core.animateFloat
 import androidx.compose.animation.core.infiniteRepeatable
 import androidx.compose.animation.core.rememberInfiniteTransition
 import androidx.compose.animation.core.tween
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.*
-import androidx.compose.foundation.layout.Arrangement
-import androidx.compose.foundation.layout.Box
-import androidx.compose.foundation.layout.Column
-import androidx.compose.foundation.layout.PaddingValues
-import androidx.compose.foundation.layout.Spacer
-import androidx.compose.foundation.layout.fillMaxSize
-import androidx.compose.foundation.layout.fillMaxWidth
-import androidx.compose.foundation.layout.height
-import androidx.compose.foundation.layout.heightIn
-import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
+import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.*
 import androidx.compose.material3.*
-import androidx.compose.material3.Card
-import androidx.compose.material3.ExperimentalMaterial3Api
-import androidx.compose.material3.FloatingActionButton
-import androidx.compose.material3.Icon
-import androidx.compose.material3.IconButton
-import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.OutlinedTextField
-import androidx.compose.material3.Scaffold
-import androidx.compose.material3.Surface
-import androidx.compose.material3.Text
-import androidx.compose.material3.TopAppBar
-import androidx.compose.material3.TopAppBarDefaults
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.snapshotFlow
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
@@ -49,11 +30,9 @@ import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextOverflow
-import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import io.maa96.cats.R
 import io.maa96.cats.domain.model.Cat
-import io.maa96.cats.presentation.theme.CatsTheme
 import io.maa96.cats.presentation.ui.DynamicAsyncImage
 
 @Composable
@@ -87,40 +66,58 @@ fun HomeScreen(
         ) {
             SearchBar(
                 query = state.searchQuery,
-                onQueryChange = { onEvent(HomeScreenEvent.OnSearchQueryChange(it)) }
+                onQueryChange = { query ->
+                    Log.d("HomeScreen", "SearchBar query changed: $query")
+                    onEvent(HomeScreenEvent.OnSearchQueryChange(query))
+                }
             )
 
             when {
                 state.isLoading -> {
                     ShimmerCatBreedList()
                 }
-                state.error != null && state.breeds.isEmpty() -> {
+                state.isLoadingSearch -> {
+                    Box(
+                        modifier = Modifier.fillMaxSize(),
+                        contentAlignment = Alignment.Center
+                    ) {
+                        CircularProgressIndicator()
+                    }
+                }
+                state.error != null && state.breeds.isEmpty() && state.filteredBreeds.isEmpty() -> {
                     ErrorState(
                         message = state.error,
                         onRetry = { onEvent(HomeScreenEvent.Refresh) }
                     )
                 }
-                state.breeds.isEmpty() && state.searchQuery.isNotBlank() -> {
+                state.filteredBreeds.isEmpty() && state.searchQuery.isNotBlank() -> {
                     EmptySearchResult(query = state.searchQuery)
                 }
                 else -> {
                     CatBreedList(
-                        breeds = if (state.showingFavoritesOnly) state.filteredBreeds else state.breeds,
+                        breeds = if (state.searchQuery.isNotBlank()) state.filteredBreeds else if (state.showingFavoritesOnly) state.filteredBreeds else state.breeds,
                         isLoadingMore = state.isLoadingMore,
+                        searchQuery = state.searchQuery,
                         onBreedClick = onNavigateToDetails,
-                        onFavoriteToggle = { breedId ->
-                            onEvent(HomeScreenEvent.ToggleFavorite(breedId))
+                        onFavoriteToggle = { breedId, isFav ->
+                            onEvent(HomeScreenEvent.ToggleFavorite(breedId, isFav))
                         },
                         onLoadMore = {
-                            if (!state.isLoading && !state.isLoadingMore && state.hasMoreData &&
-                                !state.showingFavoritesOnly
+                            if (!state.isLoading && !state.isLoadingMore && !state.showingFavoritesOnly &&
+                                state.searchQuery.isBlank()
                             ) {
+                                Log.d("HomeScreen", "Triggering LoadMoreBreeds")
                                 onEvent(HomeScreenEvent.LoadMoreBreeds)
+                            } else {
+                                Log.d(
+                                    "HomeScreen",
+                                    "Skipped LoadMoreBreeds: isLoading=${state.isLoading}, isLoadingMore=${state.isLoadingMore}, showingFavoritesOnly=${state.showingFavoritesOnly}, searchQuery=${state.searchQuery}"
+                                )
                             }
                         }
                     )
 
-                    if (state.error != null && !state.isLoading) {
+                    if (state.error != null && !state.isLoading && !state.isLoadingSearch) {
                         NetworkErrorSnackbar(
                             errorMessage = state.error,
                             onDismiss = { onEvent(HomeScreenEvent.ClearError) },
@@ -145,9 +142,7 @@ fun HomeAppBar(
         title = {
             Text(
                 text = if (showingFavoritesOnly) {
-                    stringResource(
-                        R.string.favorites
-                    )
+                    stringResource(R.string.favorites)
                 } else {
                     stringResource(R.string.title)
                 },
@@ -239,17 +234,20 @@ fun SearchBar(
 fun CatBreedList(
     breeds: List<Cat>,
     isLoadingMore: Boolean,
+    searchQuery: String,
     onBreedClick: (String) -> Unit,
-    onFavoriteToggle: (Cat) -> Unit,
+    onFavoriteToggle: (String, Boolean) -> Unit,
     onLoadMore: () -> Unit,
     modifier: Modifier = Modifier
 ) {
+    val lazyListState = rememberLazyListState()
     LazyColumn(
         modifier = modifier
             .fillMaxWidth()
             .padding(horizontal = 16.dp),
         verticalArrangement = Arrangement.spacedBy(16.dp),
-        contentPadding = PaddingValues(vertical = 16.dp)
+        contentPadding = PaddingValues(vertical = 16.dp),
+        state = lazyListState
     ) {
         items(
             items = breeds,
@@ -258,14 +256,8 @@ fun CatBreedList(
             CatBreedCard(
                 breed = breed,
                 onClick = { onBreedClick(breed.id) },
-                onFavoriteClick = { onFavoriteToggle(breed) }
+                onFavoriteClick = { onFavoriteToggle(breed.id, breed.isFavorite.not()) }
             )
-
-            if (breed == breeds.lastOrNull()) {
-                LaunchedEffect(key1 = true) {
-                    onLoadMore()
-                }
-            }
         }
         if (isLoadingMore) {
             item {
@@ -277,6 +269,17 @@ fun CatBreedList(
                 ) {
                     CircularProgressIndicator()
                 }
+            }
+        }
+    }
+    LaunchedEffect(lazyListState, searchQuery) {
+        snapshotFlow { lazyListState.layoutInfo }.collect { layoutInfo ->
+            val lastVisibleItem = layoutInfo.visibleItemsInfo.lastOrNull()
+            if (lastVisibleItem != null && lastVisibleItem.index >= breeds.size - 2 &&
+                !isLoadingMore && breeds.isNotEmpty() && searchQuery.isBlank()
+            ) {
+                Log.d("CatBreedList", "Triggering onLoadMore")
+                onLoadMore()
             }
         }
     }
@@ -338,7 +341,6 @@ fun CatBreedCard(
                 }
             }
 
-            // Favorite button
             IconButton(
                 onClick = onFavoriteClick,
                 modifier = Modifier
@@ -409,7 +411,6 @@ fun ShimmerCatBreedItem(
         modifier = modifier.fillMaxWidth()
     ) {
         Column {
-            // Image placeholder
             Spacer(
                 modifier = Modifier
                     .fillMaxWidth()
@@ -418,7 +419,6 @@ fun ShimmerCatBreedItem(
             )
 
             Column(modifier = Modifier.padding(16.dp)) {
-                // Title placeholder
                 Spacer(
                     modifier = Modifier
                         .fillMaxWidth(0.7f)
@@ -428,7 +428,6 @@ fun ShimmerCatBreedItem(
 
                 Spacer(modifier = Modifier.height(8.dp))
 
-                // Temperament placeholder
                 Spacer(
                     modifier = Modifier
                         .fillMaxWidth(0.9f)
@@ -438,7 +437,6 @@ fun ShimmerCatBreedItem(
 
                 Spacer(modifier = Modifier.height(8.dp))
 
-                // Origin placeholder
                 Spacer(
                     modifier = Modifier
                         .fillMaxWidth(0.5f)
@@ -555,9 +553,6 @@ fun NetworkErrorSnackbar(
     }
 }
 
-/**
- * Small banner that shows at the top of content to indicate the data is stale
- */
 @Composable
 fun StaleBanner(
     lastUpdated: String,
@@ -606,129 +601,5 @@ fun StaleBanner(
                 )
             }
         }
-    }
-}
-
-// Preview functions
-@Preview(showBackground = true)
-@Composable
-fun HomeAppBarPreview() {
-    CatsTheme {
-        HomeAppBar(
-            onFavoriteClick = {}
-        )
-    }
-}
-
-@Preview(showBackground = true)
-@Composable
-fun SearchBarPreview() {
-    CatsTheme {
-        SearchBar(
-            query = "Bengal",
-            onQueryChange = {}
-        )
-    }
-}
-
-@Preview(showBackground = true)
-@Composable
-fun CatBreedCardPreview() {
-    CatsTheme {
-        CatBreedCard(
-            breed = Cat(
-                id = "siam",
-                name = "Siamese",
-                images = listOf("https://cdn2.thecatapi.com/images/xnsqonbjW.jpg"),
-                temperament = "Curious, Intelligent, Social",
-                origin = "Thailand",
-                description = "Bengals are a lot of fun to live with, but they're definitely not the cat for everyone, or for first-time cat owners. Extremely intelligent, curious and active, they demand a lot of interaction and woe betide the owner who doesn't provide it.",
-                lifeSpan = "12-16 years",
-                weight = "8-15 lbs",
-                hypoallergenic = 0,
-                affectionLevel = 3,
-                childFriendly = 3,
-                strangerFriendly = 3,
-                wikipediaUrl = "https://en.wikipedia.org/wiki/Bengal_cat",
-                isFavorite = true
-            ),
-            onClick = {},
-            onFavoriteClick = {}
-        )
-    }
-}
-
-@Preview(showBackground = true, widthDp = 360, heightDp = 640)
-@Composable
-fun HomeScreenPreview() {
-    CatsTheme {
-        HomeScreen(
-            state = HomeScreenState(
-                searchQuery = "Bengal",
-                filteredBreeds = listOf(
-                    Cat(
-                        id = "beng",
-                        name = "Bengal",
-                        images = listOf("https://cdn2.thecatapi.com/images/xnsqonbjW.jpg"),
-                        temperament = "Alert, Agile, Energetic",
-                        description = "Bengals are a lot of fun to live with, but they're definitely not the cat for everyone, or for first-time cat owners. Extremely intelligent, curious and active, they demand a lot of interaction and woe betide the owner who doesn't provide it.",
-                        origin = "United States",
-                        lifeSpan = "12-16 years",
-                        weight = "8-15 lbs",
-                        hypoallergenic = 0,
-                        affectionLevel = 3,
-                        childFriendly = 3,
-                        strangerFriendly = 3,
-                        wikipediaUrl = "https://en.wikipedia.org/wiki/Bengal_cat",
-                        isFavorite = true
-                    ),
-                    Cat(
-                        id = "siam",
-                        name = "Siamese",
-                        images = listOf("https://cdn2.thecatapi.com/images/xnsqonbjW.jpg"),
-                        temperament = "Curious, Intelligent, Social",
-                        origin = "Thailand",
-                        description = "Bengals are a lot of fun to live with, but they're definitely not the cat for everyone, or for first-time cat owners. Extremely intelligent, curious and active, they demand a lot of interaction and woe betide the owner who doesn't provide it.",
-                        lifeSpan = "12-16 years",
-                        weight = "8-15 lbs",
-                        hypoallergenic = 0,
-                        affectionLevel = 3,
-                        childFriendly = 3,
-                        strangerFriendly = 3,
-                        wikipediaUrl = "https://en.wikipedia.org/wiki/Bengal_cat",
-                        isFavorite = true
-                    )
-                )
-            ),
-            onEvent = {},
-            onNavigateToDetails = {}
-        )
-    }
-}
-
-@Preview(showBackground = true)
-@Composable
-fun EmptySearchResultPreview() {
-    CatsTheme {
-        EmptySearchResult(query = "xyz")
-    }
-}
-
-@Preview(showBackground = true)
-@Composable
-fun ErrorStatePreview() {
-    CatsTheme {
-        ErrorState(
-            message = "Failed to load cat breeds. Please check your internet connection.",
-            onRetry = {}
-        )
-    }
-}
-
-@Preview(showBackground = true)
-@Composable
-fun ShimmerCatBreedListPreview() {
-    CatsTheme {
-        ShimmerCatBreedList()
     }
 }

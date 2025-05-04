@@ -1,20 +1,20 @@
 package io.maa96.cats.presentation.ui.home
 
 import javax.inject.Inject
-import kotlinx.coroutines.FlowPreview
 import kotlinx.coroutines.flow.Flow
-import kotlinx.coroutines.flow.MutableStateFlow
+import kotlinx.coroutines.flow.MutableSharedFlow
 import kotlinx.coroutines.flow.debounce
+import kotlinx.coroutines.flow.distinctUntilChanged
 
 class SearchDebouncer @Inject constructor() {
-    private val queryFlow = MutableStateFlow("")
+    private val _queryFlow = MutableSharedFlow<String>(replay = 1)
+    private val debouncedFlow = _queryFlow
+        .debounce(1000L)
+        .distinctUntilChanged()
 
-    @OptIn(FlowPreview::class)
-    fun getQueryFlow(
-        debounceMs: Long = 1000
-    ): Flow<String> = queryFlow.debounce(debounceMs)
-
-    fun setQuery(query: String) {
-        queryFlow.value = query
+    fun updateQuery(query: String) {
+        _queryFlow.tryEmit(query)
     }
+
+    fun getQueryFlow(): Flow<String> = debouncedFlow
 }
